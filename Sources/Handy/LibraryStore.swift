@@ -31,8 +31,8 @@ final class LibraryStore {
             self.clipboardHistory = ClipboardHistory()
             self.errorMessage = error.localizedDescription
         }
-        clipboardWatcher = ClipboardWatcher { [weak self] text, sourceBundleID in
-            self?.captureClipboard(text, sourceBundleID: sourceBundleID)
+        clipboardWatcher = ClipboardWatcher { [weak self] text in
+            self?.captureClipboard(text)
         }
         if isClipboardHistoryEnabled { clipboardWatcher?.start() }
     }
@@ -143,10 +143,15 @@ final class LibraryStore {
         NSWorkspace.shared.activateFileViewerSelecting([repository.url])
     }
 
-    private func captureClipboard(_ text: String, sourceBundleID: String?) {
-        guard clipboardHistory.capture(text, sourceBundleID: sourceBundleID) else { return }
-        invalidateSearchCache()
-        do { try clipboardRepository.save(clipboardHistory) }
+    private func captureClipboard(_ text: String) {
+        do {
+            var didCapture = false
+            clipboardHistory = try clipboardRepository.update { history in
+                didCapture = history.capture(text)
+            }
+            guard didCapture else { return }
+            invalidateSearchCache()
+        }
         catch { errorMessage = "Clipboard history could not be saved: \(error.localizedDescription)" }
     }
 

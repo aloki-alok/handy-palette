@@ -1,16 +1,15 @@
 import Foundation
+import Darwin
 
 public struct ClipboardEntry: Codable, Equatable, Identifiable, Sendable {
     public let id: UUID
     public let text: String
     public let capturedAt: Date
-    public let sourceBundleID: String?
 
-    public init(id: UUID = UUID(), text: String, capturedAt: Date = .now, sourceBundleID: String? = nil) {
+    public init(id: UUID = UUID(), text: String, capturedAt: Date = .now) {
         self.id = id
         self.text = text
         self.capturedAt = capturedAt
-        self.sourceBundleID = sourceBundleID
     }
 }
 
@@ -46,7 +45,6 @@ public struct ClipboardHistory: Codable, Equatable, Sendable {
               decodedEntries.allSatisfy({
                   !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                       && $0.text.utf8.count <= Self.maximumTextBytes
-                      && ($0.sourceBundleID?.utf8.count ?? 0) <= 500
               }) else {
             throw DecodingError.dataCorruptedError(forKey: .entries, in: values, debugDescription: "Clipboard history contains invalid entries")
         }
@@ -58,10 +56,10 @@ public struct ClipboardHistory: Codable, Equatable, Sendable {
     }
 
     @discardableResult
-    public mutating func capture(_ text: String, sourceBundleID: String? = nil, at date: Date = .now) -> Bool {
+    public mutating func capture(_ text: String, at date: Date = .now) -> Bool {
         let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalized.isEmpty, text.utf8.count <= Self.maximumTextBytes, entries.first?.text != text else { return false }
-        entries.insert(ClipboardEntry(text: text, capturedAt: date, sourceBundleID: sourceBundleID), at: 0)
+        entries.insert(ClipboardEntry(text: text, capturedAt: date), at: 0)
         if entries.count > Self.maximumEntries { entries.removeLast(entries.count - Self.maximumEntries) }
         return true
     }
@@ -92,6 +90,19 @@ public struct ClipboardHistoryRepository {
     }
 
     public func save(_ history: ClipboardHistory) throws {
+        try withExclusiveLock { try saveUnlocked(history) }
+    }
+
+    public func update(_ change: (inout ClipboardHistory) throws -> Void) throws -> ClipboardHistory {
+        try withExclusiveLock {
+            var history = try load()
+            try change(&history)
+            try saveUnlocked(history)
+            return history
+        }
+    }
+
+    private func saveUnlocked(_ history: ClipboardHistory) throws {
         let directory = url.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let encoder = JSONEncoder()
@@ -101,5 +112,17 @@ public struct ClipboardHistoryRepository {
             try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
         }
+    }
+
+    private func withExclusiveLock<T>(_ operation: () throws -> T) throws -> T {
+        let directory = url.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let lockURL = directory.appendingPathComponent(".clipboard-history.lock")
+        let descriptor = Darwin.open(lockURL.path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR)
+        guard descriptor >= 0 else { throw POSIXError(.EIO) }
+        defer { Darwin.close(descriptor) }
+        guard flock(descriptor, LOCK_EX) == 0 else { throw POSIXError(.EIO) }
+        defer { flock(descriptor, LOCK_UN) }
+        return try operation()
     }
 }

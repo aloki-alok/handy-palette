@@ -134,6 +134,20 @@ struct HandyChecks {
             var persistedClipboard = ClipboardHistory()
             _ = persistedClipboard.capture("safe")
             try clipboardRepository.save(persistedClipboard)
+            _ = try clipboardRepository.update { _ = $0.capture("second") }
+            _ = try clipboardRepository.update { _ = $0.capture("third") }
+            let coordinatedClipboardTexts = try clipboardRepository.load().entries.map(\.text)
+            check(Array(coordinatedClipboardTexts.prefix(3)) == ["third", "second", "safe"], "Coordinated clipboard updates must preserve earlier entries")
+
+            let legacyClipboardJSON = """
+            {"version":1,"entries":[{"id":"00000000-0000-0000-0000-000000000001","text":"legacy","capturedAt":0,"sourceBundleID":"com.example.private"}]}
+            """
+            try Data(legacyClipboardJSON.utf8).write(to: clipboardURL, options: .atomic)
+            let migratedClipboard = try clipboardRepository.load()
+            try clipboardRepository.save(migratedClipboard)
+            let sanitizedClipboardJSON = String(decoding: try Data(contentsOf: clipboardURL), as: UTF8.self)
+            check(!sanitizedClipboardJSON.contains("sourceBundleID"), "Legacy source application metadata must be removed on save")
+
             let oversizedClipboardJSON = "{\"version\":1,\"entries\":[{\"id\":\"00000000-0000-0000-0000-000000000001\",\"text\":\"\(String(repeating: "x", count: ClipboardHistory.maximumTextBytes + 1))\",\"capturedAt\":0}]}"
             let invalidClipboardData = Data(oversizedClipboardJSON.utf8)
             try invalidClipboardData.write(to: clipboardURL, options: .atomic)

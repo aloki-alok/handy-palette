@@ -5,9 +5,9 @@ import HandyCore
 final class ClipboardWatcher {
     private var timer: Timer?
     private var lastChangeCount = NSPasteboard.general.changeCount
-    private let onText: (String, String?) -> Void
+    private let onText: (String) -> Void
 
-    init(onText: @escaping (String, String?) -> Void) {
+    init(onText: @escaping (String) -> Void) {
         self.onText = onText
     }
 
@@ -37,6 +37,6 @@ final class ClipboardWatcher {
         let availableTypes = pasteboard.types ?? []
         guard ClipboardHistory.allowsCapture(pasteboardTypeNames: availableTypes.map(\.rawValue)) else { return }
         guard let text = pasteboard.string(forType: .string) else { return }
-        onText(text, NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
+        onText(text)
     }
 }
