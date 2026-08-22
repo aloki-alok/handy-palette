@@ -6,6 +6,7 @@ final class PaletteState {
     var selectedSectionID = "system:recents"
     var selection: Int?
     var newItemRequest = 0
+    var searchFocusRequest = 0
 
     func reset() {
         query = ""

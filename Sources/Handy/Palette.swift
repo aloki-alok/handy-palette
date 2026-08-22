@@ -25,27 +25,62 @@ final class PaletteController {
             let responder = self.panel?.firstResponder
             let ownsTextInput = responder is NSTextView || responder is NSTextField
             let responderName = responder.map { String(describing: type(of: $0)) } ?? "nil"
-            if let editor = responder as? NSTextView {
-                editor.insertText("focus-probe", replacementRange: editor.selectedRange())
-            }
-            DispatchQueue.main.async {
-                let passed = NSApp.isActive
-                    && self.panel?.isKeyWindow == true
-                    && ownsTextInput
-                    && self.state.query == "focus-probe"
+            self.postKeyEvent(keyCode: 0, characters: "focus-probe")
+            self.finishFocusDiagnostic(
+                responderName: responderName,
+                ownsTextInput: ownsTextInput,
+                attemptsRemaining: 10,
+                completion: completion
+            )
+        }
+    }
+
+    private func finishFocusDiagnostic(
+        responderName: String,
+        ownsTextInput: Bool,
+        attemptsRemaining: Int,
+        completion: @escaping (Bool, String) -> Void
+    ) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            let passed = NSApp.isActive
+                && self.panel?.isKeyWindow == true
+                && ownsTextInput
+                && self.state.query == "focus-probe"
+            if passed || attemptsRemaining == 1 {
                 completion(passed, "active=\(NSApp.isActive) key=\(self.panel?.isKeyWindow == true) responder=\(responderName) input=\(self.state.query == "focus-probe")")
+                return
             }
+            self.finishFocusDiagnostic(
+                responderName: responderName,
+                ownsTextInput: ownsTextInput,
+                attemptsRemaining: attemptsRemaining - 1,
+                completion: completion
+            )
         }
     }
 
     func runSnippetFocusDiagnostic(completion: @escaping (Bool, String) -> Void) {
         prepareCustomItemEditor()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        finishSnippetFocusDiagnostic(attemptsRemaining: 20, completion: completion)
+    }
+
+    private func finishSnippetFocusDiagnostic(
+        attemptsRemaining: Int,
+        completion: @escaping (Bool, String) -> Void
+    ) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             let sheet = self.panel?.attachedSheet
             let responder = sheet?.firstResponder
             let ownsTextInput = responder is NSTextView || responder is NSTextField
             let passed = NSApp.isActive && sheet?.isKeyWindow == true && ownsTextInput
             let responderName = responder.map { String(describing: type(of: $0)) } ?? "nil"
+            if !passed && attemptsRemaining > 1 {
+                self.finishSnippetFocusDiagnostic(
+                    attemptsRemaining: attemptsRemaining - 1,
+                    completion: completion
+                )
+                return
+            }
             completion(passed, "active=\(NSApp.isActive) sheetKey=\(sheet?.isKeyWindow == true) responder=\(responderName)")
         }
     }
@@ -186,17 +221,17 @@ final class PaletteController {
             return
         }
         let expectedText = store.results(in: store.sections[3])[0].text
-        handleKeyboardCommand(.selectSection(3))
-        handleKeyboardCommand(.moveSelection(1))
-        handleKeyboardCommand(.moveSelection(1))
-        handleKeyboardCommand(.moveSelection(-1))
-        handleKeyboardCommand(.activateSelection)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        postKeyEvent(keyCode: 21, characters: "4", modifiers: .command)
+        postKeyEvent(keyCode: 125)
+        postKeyEvent(keyCode: 36, characters: "\r")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             let copiedText = NSPasteboard.general.string(forType: .string)
             let returnPassed = copiedText == expectedText && self.panel?.isVisible == false
             self.show()
-            self.handleKeyboardCommand(.dismiss)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.postKeyEvent(keyCode: 53, characters: "\u{1b}")
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 let escapePassed = self.panel?.isVisible == false
                 let detail = "return=\(returnPassed) escape=\(escapePassed) keyCapable=\(self.panel?.canBecomeKey == true)"
                 completion(returnPassed && escapePassed, detail)
@@ -209,8 +244,12 @@ final class PaletteController {
         case .moveSelection(let offset): state.moveSelection(by: offset, resultCount: visibleResults().count)
         case .activateSelection: activateSelection()
         case .dismiss: hide()
-        case .cycleSection(let offset): state.cycleSection(by: offset, sections: store.sections)
-        case .selectSection(let index): state.selectSection(at: index, sections: store.sections)
+        case .cycleSection(let offset):
+            state.cycleSection(by: offset, sections: store.sections)
+            state.searchFocusRequest += 1
+        case .selectSection(let index):
+            state.selectSection(at: index, sections: store.sections)
+            state.searchFocusRequest += 1
         case .newCustomItem: prepareCustomItemEditor()
         case .toggleFavorite: toggleFavoriteSelection()
         }
@@ -237,6 +276,27 @@ final class PaletteController {
             self.handleKeyboardCommand(command)
             return nil
         }
+    }
+
+    private func postKeyEvent(
+        keyCode: UInt16,
+        characters: String = "",
+        modifiers: NSEvent.ModifierFlags = []
+    ) {
+        guard let panel,
+              let event = NSEvent.keyEvent(
+                  with: .keyDown,
+                  location: .zero,
+                  modifierFlags: modifiers,
+                  timestamp: ProcessInfo.processInfo.systemUptime,
+                  windowNumber: panel.windowNumber,
+                  context: nil,
+                  characters: characters,
+                  charactersIgnoringModifiers: characters,
+                  isARepeat: false,
+                  keyCode: keyCode
+              ) else { return }
+        NSApp.sendEvent(event)
     }
 
 }
@@ -299,6 +359,7 @@ struct PaletteView: View {
         .onChange(of: state.newItemRequest) { _, _ in
             if store.customEntryCategory != nil { isPresentingNewItem = true }
         }
+        .onChange(of: state.searchFocusRequest) { _, _ in searchFocused = true }
         .sheet(isPresented: $isPresentingNewItem) {
             if let category = store.customEntryCategory {
                 NewCustomItemSheet(category: category) { title, text, tags in
