@@ -1,6 +1,18 @@
 name: Deploy Pages
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - Sources/HandyCore/Resources/starter-library.json
+      - Scripts/build_pages.sh
+      - Scripts/serve_pages.sh
+      - Tests/web/**
+      - package.json
+      - package-lock.json
+      - playwright.config.mjs
+      - .github/workflows/pages.yml
   workflow_dispatch:
 
 permissions:
@@ -20,9 +32,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Verify interactive preview
+        run: npm run test:web
+      - name: Build site artifact
+        run: ./Scripts/build_pages.sh .build/pages
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: .build/pages
       - id: deployment
         uses: actions/deploy-pages@v4
