@@ -4,6 +4,12 @@ Handy is a private, open-source input shelf for your own text: kaomojis, emoji, 
 
 On macOS, press `Option-Command-K`, search, and copy the item you want. Your library is a portable JSON file you own.
 
+## What Handy is for
+
+Handy is for text you deliberately keep close: `¯\_(ツ)_/¯`, `✨`, a support reply, your address, or an email sign-off. Each item has a title and tags, so searching `confused`, `celebrate`, or `reply` finds the right text without memorising the characters.
+
+Handy complements clipboard history rather than replacing it. Use Maccy for something you copied moments ago. Use Handy for the text you want to find again next week.
+
 ## Status
 
 Handy is an early Mac-first prototype. Copy is the reliable core action. Paste is deliberately not part of the initial contract because global insertion is application and accessibility-permission dependent.
