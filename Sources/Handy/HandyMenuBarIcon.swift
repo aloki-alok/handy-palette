@@ -1,6 +1,6 @@
 import AppKit
 
-enum HandyMenuBarIcon {
+@MainActor enum HandyMenuBarIcon {
     static let image: NSImage = {
         let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
             NSGraphicsContext.current?.imageInterpolation = .none
