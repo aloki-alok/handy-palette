@@ -1,0 +1,32 @@
+name: Feature request
+description: Propose a focused improvement to Handy Palette
+title: "feature: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What becomes easier for kaomoji, emoji, Favorites, Recents, or clipboard history users?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the smallest useful interaction, including keyboard behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: What can users do today, and why is it insufficient?
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Product principles
+      options:
+        - label: This can work locally without requiring an account or analytics.
+        - label: This preserves explicit consent for clipboard capture.
+        - label: New content or category behavior can remain data-driven.

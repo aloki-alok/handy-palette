@@ -2,6 +2,8 @@
 
 Thank you for helping Handy Palette stay small, private, and dependable.
 
+Use [REVIEWING.md](REVIEWING.md) as the standing review standard for native interaction, Swift architecture, clipboard privacy, the website, catalog changes, iPhone work, and releases.
+
 ## Before opening a pull request
 
 Run the local verification loop:
@@ -9,6 +11,10 @@ Run the local verification loop:
 ```sh
 swift build
 swift run HandyChecks
+swift run -c release Handy --check-search-performance
+swift run -c release Handy --check-focus
+swift run -c release Handy --check-snippet-focus
+swift run -c release Handy --check-keyboard
 npm ci
 npm run test:web
 ```

@@ -130,7 +130,11 @@ npm ci
 npm run test:web
 ```
 
-The native diagnostics verify real macOS window focus, actual text insertion, sheet focus, Return, Escape, and broad-query responsiveness. The browser tests cover full-catalog loading, search, shortcuts, Favorites, copying, and mobile overflow.
+The native diagnostics verify real macOS window focus, responder-chain text insertion, sheet focus, Return, Escape, and broad-query responsiveness. The browser tests cover the full catalog, search, shortcuts, Favorites, clipboard denial, catalog failure, accessibility, light and dark appearance, and mobile overflow.
+
+## iPhone direction
+
+The planned iPhone companion is an offline custom keyboard backed by the same versioned library. It will insert kaomoji and emoji directly at the cursor and keep clipboard history as a Mac-only feature. See [REVIEWING.md](REVIEWING.md#iphone-boundary) for the Apple platform boundaries.
 
 ## Project layout
 
