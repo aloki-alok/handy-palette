@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Handy architecture</title>
+  <style>
+    :root { color-scheme: light dark; --paper: #f6f3ec; --ink: #20201d; --muted: #69675e; --line: #cfcbc0; --accent: #245f57; }
+    @media (prefers-color-scheme: dark) { :root { --paper: #1b1d1b; --ink: #e9e4d8; --muted: #a9a69d; --line: #3c403c; --accent: #82c2b6; } }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    main { max-width: 780px; margin: auto; padding: 72px 28px; }
+    .eyebrow { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: .78rem; }
+    h1 { font-size: clamp(2.5rem, 8vw, 5rem); line-height: 1; margin: .2em 0; letter-spacing: -.07em; }
+    h2 { margin-top: 3rem; padding-top: .75rem; border-top: 1px solid var(--line); font-size: 1.25rem; }
+    .thesis { font-size: 1.25rem; max-width: 38rem; }
+    .callout { border-left: 4px solid var(--accent); padding: 1rem 1.25rem; background: color-mix(in srgb, var(--accent) 8%, transparent); }
+    code, pre { background: color-mix(in srgb, var(--ink) 7%, transparent); padding: .15em .3em; border-radius: 3px; }
+    pre { padding: 1rem; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { text-align: left; vertical-align: top; padding: .65rem .3rem; border-bottom: 1px solid var(--line); }
+  </style>
+</head>
+<body><main>
+  <p class="eyebrow">Architecture artifact · 23 August 2026 · Mac-first</p>
+  <h1>Handy</h1>
+  <p class="thesis">A private personal input shelf that makes a curated library of kaomojis, emoji, and snippets available in under a second, with a portable format that can grow from Mac to iPhone without a service.</p>
+
+  <h2>Priority zero</h2>
+  <div class="callout"><strong>The library is private by construction.</strong> No network client, account, analytics, clipboard monitoring, or keystroke logging exists in v1. The hard acceptance bar is a packet-capture-free executable review and an automated test suite that touches only a temporary local library.</div>
+
+  <h2>Diagnosis</h2>
+  <p>macOS has a capable Emoji &amp; Symbols viewer, Maccy retains clipboard history, and text replacements sync across Apple devices. None is a fast, searchable, intentional library for personal expressive text. Existing inspiration offers a single-purpose Mac palette or a terminal-only copy picker.</p>
+
+  <h2>Core idea</h2>
+  <pre>[global shortcut] → [searchable shelf] → [copy selected text]
+                                    ↓
+                         [local library.json]</pre>
+  <p>Copy is the universal action. Direct paste is not a v1 promise because application focus and accessibility permission make it inherently conditional.</p>
+
+  <h2>Ownership</h2>
+  <table><tr><th>Component</th><th>Owns</th><th>Does not own</th></tr><tr><td>Library</td><td>Items, tags, pins, usage counters</td><td>Clipboard history</td></tr><tr><td>Mac shelf</td><td>Shortcut, search, copy interaction</td><td>Cloud accounts or telemetry</td></tr><tr><td>Future iPhone keyboard</td><td>Offline insertion from library</td><td>Global clipboard management</td></tr></table>
+
+  <h2>Data flow</h2>
+  <pre>initial defaults → library.json → fuzzy filter → selected text → system clipboard
+                                             ↘ useCount persisted locally</pre>
+
+  <h2>Options assessed</h2>
+  <table><tr><th>Choice</th><th>Decision</th></tr><tr><td>Fork kaomoji-palette</td><td>Rejected: it begins with a narrower data model and an accessibility-driven insertion promise.</td></tr><tr><td>Fork kaomoji-picker</td><td>Rejected: terminal UX is useful, but not an instant universal shelf.</td></tr><tr><td>Build on Maccy</td><td>Rejected: clipboard history and intentional snippets are distinct privacy and interaction models.</td></tr><tr><td>Local JSON schema</td><td>Chosen: inspectable, portable, versionable, and offline.</td></tr></table>
+
+  <h2>Costs and limits</h2>
+  <table><tr><th>Design</th><th>Latency</th><th>Privacy cost</th><th>Platform reach</th></tr><tr><td>Cloud service</td><td>Network dependent</td><td>High</td><td>Broad</td></tr><tr><td>Handy v1</td><td>Local, target under 1 s</td><td>None outside device</td><td>Mac first</td></tr></table>
+
+  <h2>Risks and mitigation</h2>
+  <table><tr><th>Risk</th><th>Severity</th><th>Mitigation</th></tr><tr><td>Global shortcut collision</td><td>Medium</td><td>Use a conservative default and make it configurable next.</td></tr><tr><td>Clipboard loss</td><td>High</td><td>Only copy in v1. No background observation or automatic restoration.</td></tr><tr><td>iOS keyboard restriction</td><td>Medium</td><td>Keep iPhone out of v1 and design it to work offline without Full Access.</td></tr></table>
+
+  <h2>Vocabulary and ADR</h2>
+  <p><strong>Library</strong> means the JSON collection. <strong>Item</strong> is one pasteable text value. <strong>Shelf</strong> is the Mac search surface. ADR-001: copy, rather than direct paste, is the universal v1 completion action.</p>
+
+  <h2>Explicitly not in v1</h2>
+  <p>Clipboard history, server sync, arbitrary app automation, iPhone keyboard, AI generation, and accounts. Build the iPhone companion after the Mac library format proves stable and export/import is tested.</p>
+  <h2>Public demo amendment</h2>
+  <p>The repository includes a dependency-free GitHub Pages demo in <code>docs/index.html</code>. It is a keyboard-accessible model of the copy-first shelf, not a web replacement for the native app. Deployment is manual so the public surface is verified before publication.</p>
+</main></body></html>
