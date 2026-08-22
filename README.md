@@ -2,7 +2,7 @@
 
 Handy is a private, open-source input shelf for your own text: kaomojis, emoji, snippets, and symbols.
 
-On macOS, press `Option-Command-Space`, search, and copy the item you want. Your library is a portable JSON file you own.
+On macOS, press `Option-Command-K`, search, and copy the item you want. Your library is a portable JSON file you own.
 
 ## Status
 
@@ -26,7 +26,7 @@ swift run HandyChecks
 
 | Shortcut | Action |
 | --- | --- |
-| `Option-Command-Space` | Open or close Handy |
+| `Option-Command-K` | Open or close Handy |
 | `Return` | Copy selected item |
 | `Escape` | Close the shelf |
 | `Up` / `Down` | Move through results |

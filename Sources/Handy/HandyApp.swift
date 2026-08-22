@@ -27,7 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if hotKey?.register() != noErr {
             let alert = NSAlert()
             alert.messageText = "Handy could not register its shortcut"
-            alert.informativeText = "Option-Command-Space is already in use. You can still open Handy from its menu-bar icon. Shortcut customization is coming next."
+            alert.informativeText = "Option-Command-K is already in use. You can still open Handy from its menu-bar icon. Shortcut customization is coming next."
             alert.runModal()
         }
     }

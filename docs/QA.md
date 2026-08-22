@@ -16,7 +16,7 @@ The checks cover search ranking, Unicode JSON round trips, invalid duplicate-ID 
 | Scenario | Expected result |
 | --- | --- |
 | First launch | A starter `library.json` is created locally and the menu-bar item appears. |
-| Shortcut is available | `Option-Command-Space` opens the shelf, search receives focus, and Escape closes it. |
+| Shortcut is available | `Option-Command-K` opens the shelf, search receives focus, and Escape closes it. |
 | Shortcut collision | The app shows an honest warning and remains reachable from the menu bar. |
 | Keyboard-only selection | Type a title or tag, use Up and Down, then Return. The exact selected item is copied. |
 | Mouse selection | Clicking an item copies that item and closes the shelf. |

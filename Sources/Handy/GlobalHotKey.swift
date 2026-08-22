@@ -24,7 +24,7 @@ final class GlobalHotKey {
         guard installStatus == noErr else { return installStatus }
 
         let id = EventHotKeyID(signature: OSType(identifier), id: identifier)
-        return RegisterEventHotKey(UInt32(kVK_Space), UInt32(optionKey | cmdKey), id, GetApplicationEventTarget(), 0, &hotKeyRef)
+        return RegisterEventHotKey(UInt32(kVK_ANSI_K), UInt32(optionKey | cmdKey), id, GetApplicationEventTarget(), 0, &hotKeyRef)
     }
 
     deinit {
