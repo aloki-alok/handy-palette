@@ -1,60 +1,113 @@
-# Handy
+# Handy Palette
 
-Handy is a private, open-source input shelf for your own text: kaomojis, emoji, snippets, and symbols.
+[![Verify](https://github.com/aloki-alok/handy-palette/actions/workflows/verify.yml/badge.svg)](https://github.com/aloki-alok/handy-palette/actions/workflows/verify.yml)
+[![MIT license](https://img.shields.io/badge/license-MIT-08705a.svg)](LICENSE)
+[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-151815.svg)](https://github.com/aloki-alok/handy-palette)
 
-On macOS, press `Option-Command-K`, search, and copy the item you want. Your library is a portable JSON file you own.
+Handy Palette is an open-source macOS kaomoji and emoji picker with clipboard history. Press `Option-Command-K`, search everything in one place, and press Return to copy.
 
-## What Handy is for
+The app also keeps Favorites and Recents. A small Snippets shelf is available for people who want reusable text, but it is not the main product.
 
-Handy is for text you deliberately keep close: `¯\_(ツ)_/¯`, `✨`, a support reply, your address, or an email sign-off. Each item has a title and tags, so searching `confused`, `celebrate`, or `reply` finds the right text without memorising the characters.
+## Install
 
-Handy complements clipboard history rather than replacing it. Use Maccy for something you copied moments ago. Use Handy for the text you want to find again next week.
+With Homebrew:
 
-## Status
+```sh
+brew install aloki-alok/tap/handy-palette
+```
 
-Handy is an early Mac-first prototype. Copy is the reliable core action. Paste is deliberately not part of the initial contract because global insertion is application and accessibility-permission dependent.
+Start Handy Palette:
 
-## Run it
+```sh
+handy-palette open
+```
 
-Requires macOS 14 or later and Swift 6:
+Or run it from source with macOS 14 or later and Swift 6:
 
 ```sh
 swift run Handy
 ```
 
-Run local verification:
+## What it does
 
-```sh
-swift run HandyChecks
-```
+- Searches kaomoji and emoji by title, tag, category, or the characters themselves.
+- Keeps the last 50 text copies when clipboard history is explicitly enabled.
+- Ignores pasteboard entries marked concealed or transient by password managers and other apps.
+- Learns Recents when an item is copied through Handy Palette.
+- Lets any library item be added to Favorites with its star, the context menu, or `Command-D`.
+- Loads sections, icons, writable capabilities, and content from the versioned library data.
+- Works without an account, analytics, or a network connection.
+
+Clipboard history starts off. Enable it from the Clipboard shelf or menu-bar menu. Apps do not always mark sensitive clipboard content correctly, so treat any clipboard manager as sensitive software.
 
 ## Shortcuts
 
 | Shortcut | Action |
 | --- | --- |
-| `Option-Command-K` | Open or close Handy |
-| `Return` | Copy selected item |
-| `Escape` | Close the shelf |
-| `Up` / `Down` | Move through results |
+| `Option-Command-K` | Open or close Handy Palette |
+| `Up` / `Down` | Select a result |
+| `Return` | Copy the selected result |
+| `Escape` | Close the palette |
+| `Control-Tab` | Move to the next shelf |
+| `Control-Shift-Tab` | Move to the previous shelf |
+| `Command-1` through `Command-9` | Open a shelf directly |
+| `Command-D` | Add or remove the selected item from Favorites |
+| `Command-N` | Add an item to the writable shelf |
 
-## Privacy
+No result is selected when the palette opens. Return only copies after you choose a row.
 
-- No account, tracking, analytics, network requests, or server.
-- Handy does not read or store clipboard history.
-- Your library is stored locally at `~/Library/Application Support/Handy/library.json`.
-- The file is ordinary JSON and can be backed up, versioned, or shared by you.
+## Command line
 
-## Library format
+The Homebrew command and the Mac interface use the same library:
+
+```text
+handy-palette search <query>
+handy-palette favorites list
+handy-palette favorite add <item-id>
+handy-palette snippets
+handy-palette add --title <title> --text <text> --tags tag-one,tag-two
+handy-palette copy <query>
+handy-palette clipboard status
+handy-palette clipboard enable
+handy-palette clipboard disable
+handy-palette clipboard list
+handy-palette clipboard clear
+```
+
+Run `handy-palette help` for the complete command reference.
+
+## Library data
+
+The portable library lives at:
+
+```text
+~/Library/Application Support/Handy/library.json
+```
+
+Clipboard history is stored separately in the same directory. Both files are private user data and should not be committed to this repository.
+
+Categories are data, not UI branches. A category declares its title, native symbol, optional display glyph, order, and capabilities. Items refer to a category by ID:
 
 ```json
 {
-  "version": 1,
+  "version": 2,
+  "catalogRevision": 3,
+  "categories": [
+    {
+      "id": "kaomoji",
+      "title": "Kaomoji",
+      "symbol": "textformat.characters",
+      "displayGlyph": ";)",
+      "order": 10
+    }
+  ],
   "items": [
     {
       "id": "shrug",
       "text": "¯\\_(ツ)_/¯",
       "title": "Shrug",
-      "tags": ["kaomoji", "confused"],
+      "tags": ["confused"],
+      "categoryID": "kaomoji",
       "isPinned": true,
       "useCount": 0
     }
@@ -62,17 +115,42 @@ swift run HandyChecks
 }
 ```
 
-## Roadmap
+Maintainers update the bundled catalog through [Scripts/update_catalog.py](Scripts/update_catalog.py). The generator uses pinned upstream revisions, removes duplicate text, and writes the same JSON consumed by the Mac app and website. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for source licenses.
 
-1. Mac menu-bar palette and JSON library.
-2. Editor, import/export, and configurable shortcut.
-3. iPhone editor and offline keyboard that reads the same library through iCloud.
-4. Small adapters for terminal, Raycast, and other platforms.
+## Verification
+
+```sh
+swift build
+swift run HandyChecks
+swift run -c release Handy --check-search-performance
+swift run -c release Handy --check-focus
+swift run -c release Handy --check-snippet-focus
+swift run -c release Handy --check-keyboard
+npm ci
+npm run test:web
+```
+
+The native diagnostics verify real macOS window focus, actual text insertion, sheet focus, Return, Escape, and broad-query responsiveness. The browser tests cover full-catalog loading, search, shortcuts, Favorites, copying, and mobile overflow.
+
+## Project layout
+
+```text
+Sources/HandyCore/   portable library, search, clipboard history, keyboard routing
+Sources/Handy/       macOS menu-bar app, palette, storage, and CLI
+Sources/HandyChecks/ deterministic native verification
+Scripts/             catalog and Pages build tools
+docs/                GitHub Pages source
+Tests/web/           browser interaction tests
+```
 
 ## Inspiration
 
-Handy takes inspiration from [kaomoji-palette](https://github.com/freysie/kaomoji-palette) and [kaomoji-picker](https://github.com/rory660/kaomoji-picker), while deliberately expanding their focused kaomoji workflows into a private, portable personal library.
+Handy Palette builds on ideas from [kaomoji-palette](https://github.com/freysie/kaomoji-palette) and [kaomoji-picker](https://github.com/rory660/kaomoji-picker), then combines them with Favorites, Recents, global search, and optional clipboard history.
+
+## Contributing and security
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Report security or privacy issues through the process in [SECURITY.md](SECURITY.md).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. Copyright 2026 Alok Ranjan. See [LICENSE](LICENSE).
