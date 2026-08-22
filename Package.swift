@@ -9,7 +9,7 @@ let package = Package(
         .executable(name: "HandyChecks", targets: ["HandyChecks"])
     ],
     targets: [
-        .target(name: "HandyCore"),
+        .target(name: "HandyCore", resources: [.copy("Resources/starter-library.json")]),
         .executableTarget(name: "Handy", dependencies: ["HandyCore"]),
         .executableTarget(name: "HandyChecks", dependencies: ["HandyCore"])
     ]
