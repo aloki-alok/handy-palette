@@ -29,16 +29,16 @@ jobs:
         run: test "$(uname -m)" = arm64
       - name: Confirm tag version
         run: |
-          test "${TAG}" = "v$(sed -n 's/.*HandyVersion.current = "\([^"]*\)".*/\1/p' Sources/HandyShared/HandyVersion.swift)"
+          test "${TAG}" = "v$(sed -n 's/.*KanaVersion.current = "\([^"]*\)".*/\1/p' Sources/KanaShared/KanaVersion.swift)"
       - name: Build and verify source
         run: |
           swift build
-          swift run HandyChecks
-          swift run -c release Handy --check-search-performance
-          swift run -c release Handy --check-focus
-          swift run -c release Handy --check-background-focus
-          swift run -c release Handy --check-snippet-focus
-          swift run -c release Handy --check-keyboard
+          swift run KanaChecks
+          swift run -c release Kana --check-search-performance
+          swift run -c release Kana --check-focus
+          swift run -c release Kana --check-background-focus
+          swift run -c release Kana --check-snippet-focus
+          swift run -c release Kana --check-keyboard
           npm ci
           npm run test:web
       - name: Package arm64 app archive
@@ -46,36 +46,36 @@ jobs:
       - name: Verify release archive
         timeout-minutes: 5
         run: |
-          archive="$RUNNER_TEMP/release/Handy-Palette-${TAG#v}-arm64.zip"
+          archive="$RUNNER_TEMP/release/Kana-${TAG#v}-arm64.zip"
           test -f "$archive"
           shasum -a 256 "$archive"
           unpacked="$RUNNER_TEMP/unpacked"
           mkdir -p "$unpacked"
           ditto -x -k "$archive" "$unpacked"
-          app="$unpacked/Handy Palette.app"
-          test "$(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist")" = "io.github.aloki-alok.handy-palette"
+          app="$unpacked/Kana.app"
+          test "$(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist")" = "io.github.aloki-alok.kana"
           test "$(plutil -extract CFBundleShortVersionString raw "$app/Contents/Info.plist")" = "${TAG#v}"
           test "$(plutil -extract CFBundleVersion raw "$app/Contents/Info.plist")" = "${TAG#v}"
           test "$(plutil -extract LSUIElement raw "$app/Contents/Info.plist")" = "true"
-          test -f "$app/Contents/Resources/HandyPalette.icns"
-          test -f "$app/Contents/Resources/Handy_HandyCore.bundle/starter-library.json"
+          test -f "$app/Contents/Resources/Kana.icns"
+          test -f "$app/Contents/Resources/Kana_KanaCore.bundle/starter-library.json"
           test -f "$app/Contents/Resources/starter-library.json"
-          lipo -archs "$app/Contents/MacOS/HandyPalette" | grep -wx arm64
-          lipo -archs "$app/Contents/Helpers/handy-palette" | grep -wx arm64
+          lipo -archs "$app/Contents/MacOS/Kana" | grep -wx arm64
+          lipo -archs "$app/Contents/Helpers/kana" | grep -wx arm64
           codesign --verify --deep --strict --verbose=2 "$app"
-          test "$("$app/Contents/Helpers/handy-palette" version)" = "Handy Palette ${TAG#v}"
+          test "$("$app/Contents/Helpers/kana" version)" = "Kana ${TAG#v}"
           fresh_library="$RUNNER_TEMP/fresh-library/library.json"
-          "$app/Contents/Helpers/handy-palette" categories --library "$fresh_library" | grep -q $'kaomoji\tKaomoji'
+          "$app/Contents/Helpers/kana" categories --library "$fresh_library" | grep -q $'kaomoji\tKaomoji'
           test -s "$fresh_library"
-          process_pattern="^$app/Contents/MacOS/HandyPalette( |$)"
-          "$app/Contents/Helpers/handy-palette" open
+          process_pattern="^$app/Contents/MacOS/Kana( |$)"
+          "$app/Contents/Helpers/kana" open
           for _ in {1..20}; do
             app_pid="$(pgrep -f "$process_pattern" | head -1 || true)"
             test -n "$app_pid" && break
             sleep 0.25
           done
           test -n "${app_pid:-}"
-          "$app/Contents/Helpers/handy-palette" open
+          "$app/Contents/Helpers/kana" open
           sleep 0.5
           test "$(pgrep -f "$process_pattern" | wc -l | tr -d ' ')" = "1"
           kill "$app_pid"
@@ -84,21 +84,21 @@ jobs:
             sleep 0.25
           done
           if kill -0 "$app_pid" 2>/dev/null; then
-            echo "Handy Palette did not stop after the launch check." >&2
+            echo "Kana did not stop after the launch check." >&2
             exit 1
           fi
-          "$app/Contents/MacOS/HandyPalette" --check-window
-          "$app/Contents/MacOS/HandyPalette" --check-focus
-          "$app/Contents/MacOS/HandyPalette" --check-background-focus
-          "$app/Contents/MacOS/HandyPalette" --check-snippet-focus
-          "$app/Contents/MacOS/HandyPalette" --check-keyboard
-          "$app/Contents/MacOS/HandyPalette" --check-search-performance
-          "$app/Contents/MacOS/HandyPalette" --check-login-item
+          "$app/Contents/MacOS/Kana" --check-window
+          "$app/Contents/MacOS/Kana" --check-focus
+          "$app/Contents/MacOS/Kana" --check-background-focus
+          "$app/Contents/MacOS/Kana" --check-snippet-focus
+          "$app/Contents/MacOS/Kana" --check-keyboard
+          "$app/Contents/MacOS/Kana" --check-search-performance
+          "$app/Contents/MacOS/Kana" --check-login-item
       - name: Upload GitHub Release asset
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          archive="$RUNNER_TEMP/release/Handy-Palette-${TAG#v}-arm64.zip"
+          archive="$RUNNER_TEMP/release/Kana-${TAG#v}-arm64.zip"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$archive" --clobber
           else

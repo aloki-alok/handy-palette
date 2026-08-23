@@ -1,28 +1,28 @@
 import Foundation
-import HandyCore
-import HandyShared
+import KanaCore
+import KanaShared
 
 @main
-struct HandyChecks {
+struct KanaChecks {
     static func main() {
         var failures: [String] = []
         func check(_ condition: @autoclosure () -> Bool, _ message: String) {
             if !condition() { failures.append(message) }
         }
 
-        let library = HandyLibrary.starter
+        let library = KanaLibrary.starter
         check(checkPreferenceMigration(expectedLegacyValue: true), "Clipboard preference migration should preserve true")
         check(checkPreferenceMigration(expectedLegacyValue: false), "Clipboard preference migration should preserve false")
         check(checkPreferenceMigration(expectedLegacyValue: nil), "Clipboard preference migration should preserve an absent value as false")
         let catalogDirectory = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("handy-catalog-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("kana-catalog-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: catalogDirectory) }
         do {
             try FileManager.default.createDirectory(at: catalogDirectory, withIntermediateDirectories: true)
             let appCatalog = catalogDirectory.appendingPathComponent("starter-library.json")
             try Data("{\"version\":2,\"catalogRevision\":0,\"categories\":[],\"items\":[]}".utf8).write(to: appCatalog)
             check(
-                HandyResources.starterCatalogURL(appResourceURL: catalogDirectory)?.standardizedFileURL == appCatalog.standardizedFileURL,
+                KanaResources.starterCatalogURL(appResourceURL: catalogDirectory)?.standardizedFileURL == appCatalog.standardizedFileURL,
                 "App Resources should take precedence for the starter catalog"
             )
         } catch {
@@ -53,11 +53,23 @@ struct HandyChecks {
         check(ordered.items.first(where: { $0.id == "shrug" })?.pinnedAt == nil, "Unstarring should clear the favorite timestamp")
         _ = ordered.togglePinned(id: "shrug", at: Date(timeIntervalSince1970: 50))
         check(ordered.favoriteItems().map(\.id) == ["shrug", "happy", "sparkles"], "Re-starring should move an item back to the top")
-        let legacy = HandyLibrary(version: HandyLibrary.currentVersion, categories: library.categories, items: [
-            HandyItem(id: "carried-over", text: "(-_-)", title: "Carried over", tags: [], categoryID: "kaomoji", isPinned: true),
-            HandyItem(id: "stamped", text: "(o_o)", title: "Stamped", tags: [], categoryID: "kaomoji", isPinned: true, pinnedAt: Date(timeIntervalSince1970: 60))
+        let legacy = KanaLibrary(version: KanaLibrary.currentVersion, categories: library.categories, items: [
+            KanaItem(id: "carried-over", text: "(-_-)", title: "Carried over", tags: [], categoryID: "kaomoji", isPinned: true),
+            KanaItem(id: "stamped", text: "(o_o)", title: "Stamped", tags: [], categoryID: "kaomoji", isPinned: true, pinnedAt: Date(timeIntervalSince1970: 60))
         ])
         check(legacy.favoriteItems().map(\.id) == ["stamped", "carried-over"], "A stamped favorite should outrank one carried over without a timestamp")
+
+        let sandbox = FileManager.default.temporaryDirectory.appendingPathComponent("kana-migration-\(UUID().uuidString)", isDirectory: true)
+        let legacyFolder = sandbox.appendingPathComponent("Handy", isDirectory: true)
+        try? FileManager.default.createDirectory(at: legacyFolder, withIntermediateDirectories: true)
+        try? Data("{}".utf8).write(to: legacyFolder.appendingPathComponent("library.json"))
+        let adopted = KanaSupportFolder.folder(root: sandbox)
+        check(adopted.lastPathComponent == "Kana", "A pre-rename support folder should be adopted as Kana")
+        check(FileManager.default.fileExists(atPath: adopted.appendingPathComponent("library.json").path), "The adopted folder should still hold the library")
+        check(!FileManager.default.fileExists(atPath: legacyFolder.path), "The legacy folder should be gone after adoption")
+        let secondRun = KanaSupportFolder.folder(root: sandbox)
+        check(secondRun == adopted, "Adoption should be idempotent")
+        try? FileManager.default.removeItem(at: sandbox)
 
         var clipboardHistory = ClipboardHistory()
         check(clipboardHistory.capture("first", at: Date(timeIntervalSince1970: 1)), "Clipboard should accept valid text")
@@ -86,12 +98,12 @@ struct HandyChecks {
         check(PaletteKeyboardRouter.command(keyCode: 123, characters: nil, modifiers: []) == nil, "Left Arrow should remain a text-editing key")
         check(PaletteKeyboardRouter.command(keyCode: 125, characters: nil, modifiers: [.option]) == nil, "Option-Arrow should remain a text-editing key")
 
-        let duplicate = HandyLibrary(version: HandyLibrary.currentVersion, items: [
-            HandyItem(id: "same", text: "one", title: "One", tags: [], isPinned: false),
-            HandyItem(id: "same", text: "two", title: "Two", tags: [], isPinned: false)
+        let duplicate = KanaLibrary(version: KanaLibrary.currentVersion, items: [
+            KanaItem(id: "same", text: "one", title: "One", tags: [], isPinned: false),
+            KanaItem(id: "same", text: "two", title: "Two", tags: [], isPinned: false)
         ])
 
-        let testDirectory = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("handy-checks-\(UUID().uuidString)", isDirectory: true)
+        let testDirectory = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("kana-checks-\(UUID().uuidString)", isDirectory: true)
         let url = testDirectory.appendingPathComponent("library.json")
         defer { try? FileManager.default.removeItem(at: testDirectory) }
         let repository = LibraryRepository(url: url)
@@ -111,7 +123,7 @@ struct HandyChecks {
             _ = try coordinatedRepository.update { updated in
                 _ = updated.togglePinned(id: "wave")
             }
-            let customItem = HandyItem(
+            let customItem = KanaItem(
                 id: "custom-check",
                 text: "Saved snippet",
                 title: "Saved snippet",
@@ -130,7 +142,7 @@ struct HandyChecks {
             """
             try Data(legacyJSON.utf8).write(to: legacyURL, options: .atomic)
             let migrated = try LibraryRepository(url: legacyURL).load()
-            check(migrated.version == HandyLibrary.currentVersion, "Version 1 libraries should migrate in memory")
+            check(migrated.version == KanaLibrary.currentVersion, "Version 1 libraries should migrate in memory")
             check(migrated.items.first(where: { $0.id == "legacy" })?.categoryID == "emoji", "Legacy tags should infer the item category")
             check(migrated.items.count == library.items.count + 1, "Legacy libraries should receive the current catalog without losing custom items")
 
@@ -153,7 +165,7 @@ struct HandyChecks {
             }
 
             let oversizedText = String(repeating: "x", count: 10_001)
-            let oversized = HandyLibrary(version: HandyLibrary.currentVersion, items: [HandyItem(id: "big", text: oversizedText, title: "Big", tags: [], isPinned: false)])
+            let oversized = KanaLibrary(version: KanaLibrary.currentVersion, items: [KanaItem(id: "big", text: oversizedText, title: "Big", tags: [], isPinned: false)])
             do {
                 try repository.save(oversized)
                 failures.append("Oversized text must be rejected")
@@ -196,7 +208,7 @@ struct HandyChecks {
         }
 
         if failures.isEmpty {
-            print("Handy checks passed: search, persistence, favorites, snippets, clipboard, and keyboard routing.")
+            print("Kana checks passed: search, persistence, favorites, snippets, clipboard, and keyboard routing.")
         } else {
             failures.forEach { FileHandle.standardError.write(Data("FAIL: \($0)\\n".utf8)) }
             exit(1)
@@ -205,26 +217,26 @@ struct HandyChecks {
 
     private static func checkPreferenceMigration(expectedLegacyValue: Bool?) -> Bool {
         let identifier = UUID().uuidString
-        let suiteName = "io.github.aloki-alok.handy-palette.tests.\(identifier)"
-        let legacyDomainName = "HandyTests.\(identifier)"
+        let suiteName = "io.github.aloki-alok.kana.tests.\(identifier)"
+        let legacyDomainName = "KanaTests.\(identifier)"
         defer {
             UserDefaults.standard.removePersistentDomain(forName: suiteName)
             UserDefaults.standard.removePersistentDomain(forName: legacyDomainName)
         }
         if let expectedLegacyValue {
             UserDefaults.standard.setPersistentDomain(
-                [HandyPreferences.clipboardHistoryEnabledKey: expectedLegacyValue],
+                [KanaPreferences.clipboardHistoryEnabledKey: expectedLegacyValue],
                 forName: legacyDomainName
             )
         }
-        let preferences = HandyPreferencesStore(
+        let preferences = KanaPreferencesStore(
             suiteName: suiteName,
             legacyDomainNames: [legacyDomainName]
         )
         let migratedValue = preferences.clipboardHistoryEnabled
         if let expectedLegacyValue {
             UserDefaults.standard.setPersistentDomain(
-                [HandyPreferences.clipboardHistoryEnabledKey: !expectedLegacyValue],
+                [KanaPreferences.clipboardHistoryEnabledKey: !expectedLegacyValue],
                 forName: legacyDomainName
             )
         }

@@ -5,17 +5,17 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>Handy Palette</string>
+    <string>Kana</string>
     <key>CFBundleExecutable</key>
-    <string>HandyPalette</string>
+    <string>Kana</string>
     <key>CFBundleIconFile</key>
-    <string>HandyPalette</string>
+    <string>Kana</string>
     <key>CFBundleIdentifier</key>
-    <string>io.github.aloki-alok.handy-palette</string>
+    <string>io.github.aloki-alok.kana</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>Handy Palette</string>
+    <string>Kana</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

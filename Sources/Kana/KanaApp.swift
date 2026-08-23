@@ -1,15 +1,15 @@
 import AppKit
 import SwiftUI
-import HandyShared
+import KanaShared
 
 @main
-struct HandyApp: App {
+struct KanaApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var loginItem = LoginItemController.shared
 
     var body: some Scene {
         MenuBarExtra {
-            Button("Open Handy Palette") { appDelegate.openPalette() }
+            Button("Open Kana") { appDelegate.openPalette() }
             Button("New snippet") { appDelegate.newSnippet() }
                 .keyboardShortcut("n", modifiers: .command)
             Button("Reveal library.json") { appDelegate.revealLibrary() }
@@ -35,10 +35,10 @@ struct HandyApp: App {
             }
             Divider()
             Text("Option-Command-K")
-            Button("Quit Handy Palette") { NSApp.terminate(nil) }
+            Button("Quit Kana") { NSApp.terminate(nil) }
         } label: {
-            Image(nsImage: HandyMenuBarIcon.image)
-                .accessibilityLabel("Handy Palette")
+            Image(nsImage: KanaMenuBarIcon.image)
+                .accessibilityLabel("Kana")
         }
         .menuBarExtraStyle(.menu)
     }
@@ -56,8 +56,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotKey = GlobalHotKey { [weak self] in self?.openPalette() }
         if hotKey?.register() != noErr {
             let alert = NSAlert()
-            alert.messageText = "Handy could not register its shortcut"
-            alert.informativeText = "Option-Command-K is already in use. You can still open Handy from its menu-bar icon. Shortcut customization is coming next."
+            alert.messageText = "Kana could not register its shortcut"
+            alert.informativeText = "Option-Command-K is already in use. You can still open Kana from its menu-bar icon. Shortcut customization is coming next."
             alert.runModal()
         }
         if arguments.first == "open"
@@ -73,14 +73,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if CommandLine.arguments.contains("--check-window") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 let state = self.palette.diagnosticState
-                print("Handy palette: \(state)")
+                print("Kana palette: \(state)")
                 exit(state.contains("visible=true") && state.contains("occluded=false") ? 0 : 1)
             }
         }
         if CommandLine.arguments.contains("--check-keyboard") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.palette.runKeyboardDiagnostic { passed, detail in
-                    print("Handy keyboard: \(passed ? "passed" : "failed") (\(detail))")
+                    print("Kana keyboard: \(passed ? "passed" : "failed") (\(detail))")
                     exit(passed ? 0 : 1)
                 }
             }
@@ -88,7 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if CommandLine.arguments.contains("--check-focus") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.palette.runFocusDiagnostic { passed, detail in
-                    print("Handy focus: \(passed ? "passed" : "failed") (\(detail))")
+                    print("Kana focus: \(passed ? "passed" : "failed") (\(detail))")
                     exit(passed ? 0 : 1)
                 }
             }
@@ -96,7 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if CommandLine.arguments.contains("--check-background-focus") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.palette.runBackgroundFocusDiagnostic { passed, detail in
-                    print("Handy background focus: \(passed ? "passed" : "failed") (\(detail))")
+                    print("Kana background focus: \(passed ? "passed" : "failed") (\(detail))")
                     exit(passed ? 0 : 1)
                 }
             }
@@ -104,7 +104,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if CommandLine.arguments.contains("--check-snippet-focus") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.palette.runSnippetFocusDiagnostic { passed, detail in
-                    print("Handy snippet focus: \(passed ? "passed" : "failed") (\(detail))")
+                    print("Kana snippet focus: \(passed ? "passed" : "failed") (\(detail))")
                     exit(passed ? 0 : 1)
                 }
             }
@@ -112,14 +112,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if CommandLine.arguments.contains("--check-search-performance") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.palette.runSearchPerformanceDiagnostic { passed, detail in
-                    print("Handy search performance: \(passed ? "passed" : "failed") (\(detail))")
+                    print("Kana search performance: \(passed ? "passed" : "failed") (\(detail))")
                     exit(passed ? 0 : 1)
                 }
             }
         }
         if CommandLine.arguments.contains("--check-login-item") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                print("Handy login item: \(self.loginItem.diagnosticState)")
+                print("Kana login item: \(self.loginItem.diagnosticState)")
                 exit(self.loginItem.isPackagedApplication ? 0 : 1)
             }
         }

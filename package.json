@@ -1,5 +1,5 @@
 {
-  "name": "handy-palette-site",
+  "name": "kana-site",
   "private": true,
   "scripts": {
     "test:web": "playwright test"

@@ -1,6 +1,6 @@
 # Third-party notices
 
-Handy includes generated catalog data from these open-source projects:
+Kana includes generated catalog data from these open-source projects:
 
 ## Kaomoji Palette
 

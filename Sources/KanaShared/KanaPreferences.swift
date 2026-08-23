@@ -1,6 +1,6 @@
 import Foundation
 
-public struct HandyPreferencesStore {
+public struct KanaPreferencesStore {
     private let defaults: UserDefaults
     private let legacyDomainNames: [String]
 
@@ -11,23 +11,23 @@ public struct HandyPreferencesStore {
 
     public var clipboardHistoryEnabled: Bool {
         migrateClipboardPreferenceIfNeeded()
-        return defaults.bool(forKey: HandyPreferences.clipboardHistoryEnabledKey)
+        return defaults.bool(forKey: KanaPreferences.clipboardHistoryEnabledKey)
     }
 
     public func setClipboardHistoryEnabled(_ enabled: Bool) {
         migrateClipboardPreferenceIfNeeded()
-        defaults.set(enabled, forKey: HandyPreferences.clipboardHistoryEnabledKey)
+        defaults.set(enabled, forKey: KanaPreferences.clipboardHistoryEnabledKey)
     }
 
     private func migrateClipboardPreferenceIfNeeded() {
         let migrationKey = "migration.clipboardHistoryEnabled.v1"
         guard !defaults.bool(forKey: migrationKey) else { return }
-        if defaults.object(forKey: HandyPreferences.clipboardHistoryEnabledKey) == nil {
+        if defaults.object(forKey: KanaPreferences.clipboardHistoryEnabledKey) == nil {
             for domainName in legacyDomainNames {
-                guard let value = UserDefaults.standard.persistentDomain(forName: domainName)?[HandyPreferences.clipboardHistoryEnabledKey] as? Bool else {
+                guard let value = UserDefaults.standard.persistentDomain(forName: domainName)?[KanaPreferences.clipboardHistoryEnabledKey] as? Bool else {
                     continue
                 }
-                defaults.set(value, forKey: HandyPreferences.clipboardHistoryEnabledKey)
+                defaults.set(value, forKey: KanaPreferences.clipboardHistoryEnabledKey)
                 break
             }
         }
@@ -35,7 +35,7 @@ public struct HandyPreferencesStore {
     }
 }
 
-public enum HandyPreferences {
+public enum KanaPreferences {
     public static let clipboardHistoryEnabledKey = "clipboardHistoryEnabled"
 
     public static var clipboardHistoryEnabled: Bool {
@@ -43,10 +43,15 @@ public enum HandyPreferences {
         set { store.setClipboardHistoryEnabled(newValue) }
     }
 
-    private static var store: HandyPreferencesStore {
-        HandyPreferencesStore(
-            suiteName: "io.github.aloki-alok.handy-palette.shared",
-            legacyDomainNames: ["Handy", "handy-palette"]
+    private static var store: KanaPreferencesStore {
+        KanaPreferencesStore(
+            suiteName: "io.github.aloki-alok.kana.shared",
+            legacyDomainNames: [
+                "io.github.aloki-alok.handy-palette.shared",
+                "io.github.aloki-alok.handy-palette",
+                "Handy",
+                "handy-palette"
+            ]
         )
     }
 }

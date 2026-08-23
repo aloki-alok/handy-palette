@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
-import HandyCore
-import HandyShared
+import KanaCore
+import KanaShared
 
 private final class PalettePanel: NSPanel {
     override var canBecomeKey: Bool { true }
@@ -211,7 +211,7 @@ final class PaletteController {
         }
         let alert = NSAlert()
         alert.messageText = "Enable clipboard history?"
-        alert.informativeText = "Handy Palette will save up to 50 text copies made after you enable it. The history stays on this Mac. Items marked as concealed or transient by password managers are ignored, but apps do not always label sensitive text correctly."
+        alert.informativeText = "Kana will save up to 50 text copies made after you enable it. The history stays on this Mac. Items marked as concealed or transient by password managers are ignored, but apps do not always label sensitive text correctly."
         alert.addButton(withTitle: "Enable history")
         alert.addButton(withTitle: "Cancel")
         if alert.runModal() == .alertFirstButtonReturn {
@@ -223,7 +223,7 @@ final class PaletteController {
         guard !store.clipboardHistory.entries.isEmpty else { return }
         let alert = NSAlert()
         alert.messageText = "Clear clipboard history?"
-        alert.informativeText = "This permanently removes all text saved in Handy Palette clipboard history."
+        alert.informativeText = "This permanently removes all text saved in Kana clipboard history."
         alert.addButton(withTitle: "Clear history")
         alert.addButton(withTitle: "Cancel")
         if alert.runModal() == .alertFirstButtonReturn {
@@ -744,7 +744,7 @@ struct PaletteView: View {
         dismiss()
     }
 
-    private func addCustomItem(title: String, text: String, tags: [String], category: HandyCategory) -> Bool {
+    private func addCustomItem(title: String, text: String, tags: [String], category: KanaCategory) -> Bool {
         guard let itemID = store.addCustomItem(text: text, title: title, tags: tags, categoryID: category.id),
               let sectionIndex = store.sections.firstIndex(where: { $0.categoryID == category.id }) else { return false }
         selectSection(at: sectionIndex)
@@ -754,7 +754,7 @@ struct PaletteView: View {
 }
 
 private struct NewCustomItemSheet: View {
-    let category: HandyCategory
+    let category: KanaCategory
     let onSave: (String, String, [String]) -> Bool
     @Environment(\.dismiss) private var dismiss
     @State private var title = ""

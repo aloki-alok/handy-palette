@@ -20,7 +20,7 @@ final class LoginItemController {
     var isEnabled: Bool { status == .enabled }
 
     var statusDescription: String {
-        guard isPackagedApplication else { return "Open at login is available in Handy Palette.app." }
+        guard isPackagedApplication else { return "Open at login is available in Kana.app." }
         switch status {
         case .enabled: return "Open at login is on."
         case .notRegistered: return "Open at login is off."
@@ -48,7 +48,7 @@ final class LoginItemController {
 
     func setEnabled(_ shouldEnable: Bool) {
         guard isPackagedApplication else {
-            errorMessage = "Open at login is available after installing Handy Palette.app."
+            errorMessage = "Open at login is available after installing Kana.app."
             return
         }
         guard shouldEnable != isEnabled else { return }

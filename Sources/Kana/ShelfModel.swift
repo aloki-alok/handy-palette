@@ -1,5 +1,5 @@
 import Foundation
-import HandyCore
+import KanaCore
 
 enum SystemShelf: String {
     case recents, favorites, clipboard
@@ -17,7 +17,7 @@ struct ShelfSection: Identifiable, Hashable {
         ShelfSection(id: "system:\(shelf.rawValue)", title: title, symbol: symbol, displayGlyph: nil, systemShelf: shelf, categoryID: nil)
     }
 
-    init(category: HandyCategory) {
+    init(category: KanaCategory) {
         id = "category:\(category.id)"
         title = category.title
         symbol = category.symbol
@@ -46,7 +46,7 @@ struct ShelfResult: Identifiable, Equatable {
     let libraryID: String?
     let isFavorite: Bool
 
-    init(item: HandyItem, category: HandyCategory?) {
+    init(item: KanaItem, category: KanaCategory?) {
         id = "library:\(item.id)"
         text = item.text
         title = item.title

@@ -1,16 +1,16 @@
 import Foundation
 import Observation
-import HandyCore
-import HandyShared
+import KanaCore
+import KanaShared
 import AppKit
 
 @MainActor @Observable
 final class LibraryStore {
     private let repository: LibraryRepository
     private let clipboardRepository: ClipboardHistoryRepository
-    private(set) var library: HandyLibrary
+    private(set) var library: KanaLibrary
     private(set) var clipboardHistory: ClipboardHistory
-    private(set) var isClipboardHistoryEnabled = HandyPreferences.clipboardHistoryEnabled
+    private(set) var isClipboardHistoryEnabled = KanaPreferences.clipboardHistoryEnabled
     var errorMessage: String?
     private var clipboardWatcher: ClipboardWatcher?
     @ObservationIgnored private var cachedSearchQuery: String?
@@ -38,7 +38,7 @@ final class LibraryStore {
 
     var libraryPath: String { repository.url.path }
     var itemCount: Int { library.items.count }
-    var customEntryCategory: HandyCategory? {
+    var customEntryCategory: KanaCategory? {
         library.categories.first { $0.capabilities.contains("custom-entry") }
     }
 
@@ -77,7 +77,7 @@ final class LibraryStore {
 
     func setClipboardHistoryEnabled(_ enabled: Bool) {
         isClipboardHistoryEnabled = enabled
-        HandyPreferences.clipboardHistoryEnabled = enabled
+        KanaPreferences.clipboardHistoryEnabled = enabled
         enabled ? clipboardWatcher?.start() : clipboardWatcher?.stop()
     }
 
@@ -94,7 +94,7 @@ final class LibraryStore {
             errorMessage = "That section does not accept custom items."
             return nil
         }
-        let item = HandyItem(
+        let item = KanaItem(
             id: "custom-\(UUID().uuidString.lowercased())",
             text: text,
             title: title,
@@ -136,7 +136,7 @@ final class LibraryStore {
 
     func ignoreCurrentClipboardChange() { clipboardWatcher?.ignoreCurrentChange() }
 
-    func reportCopyFailure() { errorMessage = "Handy could not write to the system clipboard. Nothing was copied." }
+    func reportCopyFailure() { errorMessage = "Kana could not write to the system clipboard. Nothing was copied." }
 
     func openLibraryInFinder() {
         NSWorkspace.shared.activateFileViewerSelecting([repository.url])
@@ -154,7 +154,7 @@ final class LibraryStore {
         catch { errorMessage = "Clipboard history could not be saved: \(error.localizedDescription)" }
     }
 
-    private func makeResult(_ item: HandyItem) -> ShelfResult {
+    private func makeResult(_ item: KanaItem) -> ShelfResult {
         ShelfResult(item: item, category: library.categories.first { $0.id == item.categoryID })
     }
 

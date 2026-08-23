@@ -1,10 +1,10 @@
 import AppKit
 import Foundation
-import HandyCore
-import HandyShared
+import KanaCore
+import KanaShared
 
 @MainActor
-enum HandyCLI {
+enum KanaCLI {
     static func run(_ rawArguments: [String]) -> Int32 {
         do {
             guard let command = rawArguments.first else {
@@ -16,7 +16,7 @@ enum HandyCLI {
             case "open":
                 try openApplication()
             case "--version", "version":
-                print("Handy Palette \(HandyVersion.current)")
+                print("Kana \(KanaVersion.current)")
             case "--help", "help":
                 print(help)
             case "categories":
@@ -45,7 +45,7 @@ enum HandyCLI {
             }
             return 0
         } catch {
-            fputs("handy-palette: \(error.localizedDescription)\n", stderr)
+            fputs("kana: \(error.localizedDescription)\n", stderr)
             return 1
         }
     }
@@ -57,7 +57,7 @@ enum HandyCLI {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
         guard appURL.pathExtension == "app" else {
-            throw CLIError("The open command is available from the Handy Palette.app helper.")
+            throw CLIError("The open command is available from the Kana.app helper.")
         }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
@@ -65,7 +65,7 @@ enum HandyCLI {
         try process.run()
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
-            throw CLIError("Handy Palette could not be opened.")
+            throw CLIError("Kana could not be opened.")
         }
     }
 
@@ -85,10 +85,10 @@ enum HandyCLI {
     private static func search(_ arguments: [String]) throws {
         let options = try Options(arguments)
         let query = options.positionals.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { throw CLIError("Usage: handy-palette search <query>") }
+        guard !query.isEmpty else { throw CLIError("Usage: kana search <query>") }
         let library = try repository(from: arguments).load()
         for item in library.matches(query) { printItem(item) }
-        if HandyPreferences.clipboardHistoryEnabled {
+        if KanaPreferences.clipboardHistoryEnabled {
             let history = try clipboardRepository(from: arguments).load()
             for entry in history.matches(query) { print("clipboard\t\(entry.id.uuidString.lowercased())\t\(singleLine(entry.text))") }
         }
@@ -112,7 +112,7 @@ enum HandyCLI {
         let tags = options.value("tags")?.split(separator: ",").map {
             $0.trimmingCharacters(in: .whitespacesAndNewlines)
         }.filter { !$0.isEmpty } ?? []
-        let item = HandyItem(
+        let item = KanaItem(
             id: "custom-\(UUID().uuidString.lowercased())",
             text: text,
             title: title.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -129,13 +129,13 @@ enum HandyCLI {
         let options = try Options(arguments)
         let repo = repository(from: arguments)
         let library = try repo.load()
-        let item: HandyItem?
+        let item: KanaItem?
         if let id = options.value("id") {
             item = library.items.first { $0.id == id }
         } else {
             let query = options.positionals.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
             guard !query.isEmpty else {
-                throw CLIError("Usage: handy-palette copy <query> or handy-palette copy --id <item-id>")
+                throw CLIError("Usage: kana copy <query> or kana copy --id <item-id>")
             }
             item = library.matches(query).first
         }
@@ -156,7 +156,7 @@ enum HandyCLI {
             action = options.positionals[0]
             target = options.positionals[1]
         } else {
-            throw CLIError("Usage: handy-palette favorite <add|remove|toggle> <item-id>")
+            throw CLIError("Usage: kana favorite <add|remove|toggle> <item-id>")
         }
         guard ["add", "remove", "toggle"].contains(action) else {
             throw CLIError("Unknown favorite action: \(action)")
@@ -181,22 +181,22 @@ enum HandyCLI {
     private static func favorites(_ arguments: [String]) throws {
         let options = try Options(arguments)
         guard options.positionals.isEmpty || options.positionals == ["list"] else {
-            throw CLIError("Usage: handy-palette favorites [list]")
+            throw CLIError("Usage: kana favorites [list]")
         }
         for item in try repository(from: arguments).load().favoriteItems() { printItem(item) }
     }
 
     private static func clipboard(_ arguments: [String]) throws {
         let options = try Options(arguments)
-        guard let action = options.positionals.first else { throw CLIError("Usage: handy-palette clipboard <status|enable|disable|list|clear>") }
+        guard let action = options.positionals.first else { throw CLIError("Usage: kana clipboard <status|enable|disable|list|clear>") }
         switch action {
         case "status":
-            print(HandyPreferences.clipboardHistoryEnabled ? "enabled" : "disabled")
+            print(KanaPreferences.clipboardHistoryEnabled ? "enabled" : "disabled")
         case "enable":
-            HandyPreferences.clipboardHistoryEnabled = true
+            KanaPreferences.clipboardHistoryEnabled = true
             print("enabled")
         case "disable":
-            HandyPreferences.clipboardHistoryEnabled = false
+            KanaPreferences.clipboardHistoryEnabled = false
             print("disabled")
         case "list":
             for entry in try clipboardRepository(from: arguments).load().entries {
@@ -225,7 +225,7 @@ enum HandyCLI {
         return arguments[index + 1]
     }
 
-    private static func printItem(_ item: HandyItem) {
+    private static func printItem(_ item: KanaItem) {
         print("\(item.categoryID)\t\(item.id)\t\(singleLine(item.text))\t\(item.title)")
     }
 
@@ -234,20 +234,20 @@ enum HandyCLI {
     }
 
     private static let help = """
-    Handy Palette \(HandyVersion.current)
+    Kana \(KanaVersion.current)
 
     Usage:
-      handy-palette open
-      handy-palette search <query> [--library <path>]
-      handy-palette list [category] [--library <path>]
-      handy-palette snippets [--library <path>]
-      handy-palette categories [--library <path>]
-      handy-palette add --title <title> --text <text> [--tags a,b] [--favorite] [--category <id>]
-      handy-palette copy <query> | copy --id <item-id>
-      handy-palette favorite <add|remove|toggle> <item-id>
-      handy-palette favorites [list]
-      handy-palette clipboard <status|enable|disable|list|clear>
-      handy-palette version
+      kana open
+      kana search <query> [--library <path>]
+      kana list [category] [--library <path>]
+      kana snippets [--library <path>]
+      kana categories [--library <path>]
+      kana add --title <title> --text <text> [--tags a,b] [--favorite] [--category <id>]
+      kana copy <query> | copy --id <item-id>
+      kana favorite <add|remove|toggle> <item-id>
+      kana favorites [list]
+      kana clipboard <status|enable|disable|list|clear>
+      kana version
     """
 
     private struct Options {
@@ -296,8 +296,8 @@ enum HandyCLI {
 }
 
 @main
-struct HandyCLIExecutable {
+struct KanaCLIExecutable {
     static func main() {
-        exit(HandyCLI.run(Array(CommandLine.arguments.dropFirst())))
+        exit(KanaCLI.run(Array(CommandLine.arguments.dropFirst())))
     }
 }

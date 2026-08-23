@@ -1,18 +1,18 @@
 # Mac QA matrix
 
-Run this matrix before a tagged release. Handy Palette finds and copies kaomoji, emoji, clipboard history, Favorites, Recents, and optional snippets. It does not promise automatic paste into other applications.
+Run this matrix before a tagged release. Kana finds and copies kaomoji, emoji, clipboard history, Favorites, Recents, and optional snippets. It does not promise automatic paste into other applications.
 
 ## Automated gate
 
 ```sh
 swift build
-swift run HandyChecks
-swift run -c release Handy --check-search-performance
-swift run -c release Handy --check-focus
-swift run -c release Handy --check-background-focus
-swift run -c release Handy --check-snippet-focus
-swift run -c release Handy --check-keyboard
-./Scripts/package_macos_app.sh 0.2.0 .build/package-check
+swift run KanaChecks
+swift run -c release Kana --check-search-performance
+swift run -c release Kana --check-focus
+swift run -c release Kana --check-background-focus
+swift run -c release Kana --check-snippet-focus
+swift run -c release Kana --check-keyboard
+./Scripts/package_macos_app.sh 0.3.0 .build/package-check
 npm ci
 npm run test:web
 ```
@@ -24,8 +24,8 @@ The checks cover search ranking and limits, Unicode JSON round trips, coordinate
 | Scenario | Expected result |
 | --- | --- |
 | First launch | A starter `library.json` is created locally and the menu-bar item appears. |
-| Homebrew cask | The cask installs `Handy Palette.app` in Applications and exposes the `handy-palette` command. |
-| Command-line open | `handy-palette open` shows the palette on cold start and reuses the same process when already running. |
+| Homebrew cask | The cask installs `Kana.app` in Applications and exposes the `kana` command. |
+| Command-line open | `kana open` shows the palette on cold start and reuses the same process when already running. |
 | Open at login | The menu toggle registers and unregisters the app through the system Login Items service. |
 | Shortcut is available | `Option-Command-K` opens the shelf, search receives focus, and Escape closes it. |
 | Shortcut collision | The app shows an honest warning and remains reachable from the menu bar. |
@@ -40,7 +40,7 @@ The checks cover search ranking and limits, Unicode JSON round trips, coordinate
 | Mouse selection | Clicking an item copies that item and closes the shelf. |
 | Unicode | Copy `¯\_(ツ)_/¯`, `(╯°□°）╯︵ ┻━┻`, and a multiline snippet into TextEdit. Bytes and line breaks match the library. |
 | Search | Exact title ranks first. Tags find their matching entry. Empty search shows the curated shelf. |
-| Maccy coexistence | Copy an item, then retrieve it with Maccy. When Handy clipboard history is disabled it does not keep the copy. When enabled it keeps the copy independently. |
+| Maccy coexistence | Copy an item, then retrieve it with Maccy. When Kana clipboard history is disabled it does not keep the copy. When enabled it keeps the copy independently. |
 | Offline | Disconnect networking, relaunch, search, and copy. All behavior remains available. |
 | Invalid library | Replace a copy of the library with malformed JSON or duplicate IDs, then relaunch. The valid in-memory starter data remains usable and the app shows the error rather than overwriting a file. |
 | Library path | Menu bar `Reveal library.json` opens the file location, and the file remains human-readable JSON. |
@@ -48,7 +48,7 @@ The checks cover search ranking and limits, Unicode JSON round trips, coordinate
 
 ## Deliberate exclusions
 
-Password fields, secure-input applications, remote desktop sessions, and apps that block automation are outside automatic paste because Handy does not inject keystrokes. Clipboard managers cannot guarantee that every source app labels sensitive content correctly.
+Password fields, secure-input applications, remote desktop sessions, and apps that block automation are outside automatic paste because Kana does not inject keystrokes. Clipboard managers cannot guarantee that every source app labels sensitive content correctly.
 
 ## GitHub Pages gate
 

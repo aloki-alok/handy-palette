@@ -2,21 +2,21 @@
 import PackageDescription
 
 let package = Package(
-    name: "Handy",
+    name: "Kana",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "Handy", targets: ["Handy"]),
-        .executable(name: "HandyCLI", targets: ["HandyCLI"]),
-        .executable(name: "HandyChecks", targets: ["HandyChecks"])
+        .executable(name: "Kana", targets: ["Kana"]),
+        .executable(name: "kana-cli", targets: ["KanaCLI"]),
+        .executable(name: "KanaChecks", targets: ["KanaChecks"])
     ],
     targets: [
-        .target(name: "HandyCore", resources: [.copy("Resources/starter-library.json")]),
-        .target(name: "HandyShared"),
-        .executableTarget(name: "Handy", dependencies: ["HandyCore", "HandyShared"]),
+        .target(name: "KanaCore", resources: [.copy("Resources/starter-library.json")]),
+        .target(name: "KanaShared"),
+        .executableTarget(name: "Kana", dependencies: ["KanaCore", "KanaShared"]),
         .executableTarget(
-            name: "HandyCLI",
-            dependencies: ["HandyCore", "HandyShared"]
+            name: "KanaCLI",
+            dependencies: ["KanaCore", "KanaShared"]
         ),
-        .executableTarget(name: "HandyChecks", dependencies: ["HandyCore", "HandyShared"])
+        .executableTarget(name: "KanaChecks", dependencies: ["KanaCore", "KanaShared"])
     ]
 )

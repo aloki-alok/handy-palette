@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible problem in Handy Palette
+description: Report a reproducible problem in Kana
 title: "bug: "
 labels: [bug]
 body:
@@ -20,7 +20,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Handy Palette version
+      label: Kana version
       placeholder: 0.1.0
     validations:
       required: true

@@ -2,8 +2,8 @@
 set -euo pipefail
 
 readonly project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-readonly icon_source="$project_root/docs/handy-icon.png"
-readonly plist_template="$project_root/Distribution/HandyPalette-Info.plist"
+readonly icon_source="$project_root/docs/kana-icon.png"
+readonly plist_template="$project_root/Distribution/Kana-Info.plist"
 
 usage() {
   echo "Usage: $0 [version] [output-directory]" >&2
@@ -42,13 +42,18 @@ for required_path in "$icon_source" "$plist_template"; do
 done
 
 build_directory="$project_root/.build/release"
-gui_binary="$build_directory/Handy"
-cli_binary="$build_directory/HandyCLI"
-resource_bundle="$build_directory/Handy_HandyCore.bundle"
+gui_binary="$build_directory/Kana"
+cli_binary="$build_directory/kana-cli"
+resource_bundle="$build_directory/Kana_KanaCore.bundle"
 
 cd "$project_root"
-swift build -c release --product Handy
-swift build -c release --product HandyCLI
+swift build -c release --product Kana
+swift build -c release --product kana-cli
+
+if [[ "$gui_binary" -ef "$cli_binary" ]]; then
+  echo "The app and CLI products resolve to one file. Product names must differ by more than case." >&2
+  exit 67
+fi
 
 for required_path in "$gui_binary" "$cli_binary" "$resource_bundle"; do
   if [[ ! -e "$required_path" ]]; then
@@ -57,25 +62,25 @@ for required_path in "$gui_binary" "$cli_binary" "$resource_bundle"; do
   fi
 done
 
-binary_version="$($cli_binary version | sed -n 's/^Handy Palette //p')"
+binary_version="$($cli_binary version | sed -n 's/^Kana //p')"
 if [[ "$binary_version" != "$version" ]]; then
   echo "Package version $version does not match binary version $binary_version." >&2
   exit 68
 fi
 
-staging_directory="$(mktemp -d "${TMPDIR:-/tmp}/handy-palette-package.XXXXXX")"
+staging_directory="$(mktemp -d "${TMPDIR:-/tmp}/kana-package.XXXXXX")"
 trap 'rm -rf "$staging_directory"' EXIT
 
-app_bundle="$staging_directory/Handy Palette.app"
+app_bundle="$staging_directory/Kana.app"
 contents="$app_bundle/Contents"
 resources="$contents/Resources"
 macos="$contents/MacOS"
 helpers="$contents/Helpers"
-archive="$output_directory/Handy-Palette-${version}-arm64.zip"
+archive="$output_directory/Kana-${version}-arm64.zip"
 
 mkdir -p "$resources" "$macos" "$helpers" "$output_directory"
 sed "s/__VERSION__/$version/g" "$plist_template" > "$contents/Info.plist"
-iconset="$staging_directory/HandyPalette.iconset"
+iconset="$staging_directory/Kana.iconset"
 mkdir -p "$iconset"
 sips -z 16 16 "$icon_source" --out "$iconset/icon_16x16.png" >/dev/null
 sips -z 32 32 "$icon_source" --out "$iconset/icon_16x16@2x.png" >/dev/null
@@ -87,15 +92,15 @@ sips -z 256 256 "$icon_source" --out "$iconset/icon_256x256.png" >/dev/null
 sips -z 512 512 "$icon_source" --out "$iconset/icon_256x256@2x.png" >/dev/null
 sips -z 512 512 "$icon_source" --out "$iconset/icon_512x512.png" >/dev/null
 sips -z 1024 1024 "$icon_source" --out "$iconset/icon_512x512@2x.png" >/dev/null
-iconutil -c icns "$iconset" -o "$resources/HandyPalette.icns"
+iconutil -c icns "$iconset" -o "$resources/Kana.icns"
 
-install -m 755 "$gui_binary" "$macos/HandyPalette"
-install -m 755 "$cli_binary" "$helpers/handy-palette"
-cp -R "$resource_bundle" "$resources/Handy_HandyCore.bundle"
+install -m 755 "$gui_binary" "$macos/Kana"
+install -m 755 "$cli_binary" "$helpers/kana"
+cp -R "$resource_bundle" "$resources/Kana_KanaCore.bundle"
 install -m 644 "$resource_bundle/starter-library.json" "$resources/starter-library.json"
 
-codesign --force --sign - --timestamp=none "$macos/HandyPalette"
-codesign --force --sign - --timestamp=none "$helpers/handy-palette"
+codesign --force --sign - --timestamp=none "$macos/Kana"
+codesign --force --sign - --timestamp=none "$helpers/kana"
 codesign --force --sign - --timestamp=none "$app_bundle"
 codesign --verify --deep --strict --verbose=2 "$app_bundle"
 

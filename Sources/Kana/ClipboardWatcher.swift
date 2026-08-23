@@ -1,6 +1,6 @@
 import AppKit
-import HandyCore
-import HandyShared
+import KanaCore
+import KanaShared
 
 @MainActor
 final class ClipboardWatcher {

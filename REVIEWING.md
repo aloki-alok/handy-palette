@@ -1,10 +1,10 @@
-# Reviewing Handy Palette
+# Reviewing Kana
 
 This is the standing review guide for maintainers and coding agents. A release is ready only when every applicable item has evidence from a command or a documented manual check.
 
 ## Product boundary
 
-Handy Palette is a macOS kaomoji and emoji picker with optional clipboard history. Favorites and Recents support that core. Snippets are a secondary, data-driven capability.
+Kana is a macOS kaomoji and emoji picker with optional clipboard history. Favorites and Recents support that core. Snippets are a secondary, data-driven capability.
 
 - Keep the app useful without an account, analytics, or network access.
 - Keep clipboard monitoring off until the user explicitly enables it.
@@ -34,7 +34,7 @@ Check the native app for:
 
 ## Swift and architecture review
 
-- Keep `HandyCore` independent of AppKit and SwiftUI.
+- Keep `KanaCore` independent of AppKit and SwiftUI.
 - Keep file formats versioned, bounded, validated, and backward compatible.
 - Coordinate read-modify-write persistence with file locks and atomic replacement.
 - Keep UI state on the main actor and keep expensive search work bounded and cached.
@@ -93,12 +93,12 @@ Run from a clean checkout of the intended release commit:
 
 ```sh
 swift build
-swift run HandyChecks
-swift run -c release Handy --check-search-performance
-swift run -c release Handy --check-focus
-swift run -c release Handy --check-background-focus
-swift run -c release Handy --check-snippet-focus
-swift run -c release Handy --check-keyboard
+swift run KanaChecks
+swift run -c release Kana --check-search-performance
+swift run -c release Kana --check-focus
+swift run -c release Kana --check-background-focus
+swift run -c release Kana --check-snippet-focus
+swift run -c release Kana --check-keyboard
 npm ci
 npm run test:web
 git diff --check

@@ -77,9 +77,7 @@ public struct ClipboardHistoryRepository {
     public init(url: URL = Self.defaultURL) { self.url = url }
 
     public static var defaultURL: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Handy", isDirectory: true)
-            .appendingPathComponent("clipboard-history.json")
+        KanaSupportFolder.url(for: "clipboard-history.json")
     }
 
     public func load() throws -> ClipboardHistory {

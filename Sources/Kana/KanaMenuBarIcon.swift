@@ -1,12 +1,12 @@
 import AppKit
 
-@MainActor enum HandyMenuBarIcon {
+@MainActor enum KanaMenuBarIcon {
     static let image: NSImage = {
         let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { _ in
             NSGraphicsContext.current?.imageInterpolation = .none
             NSColor.black.setFill()
 
-            // Pixel monitor frame, derived from Handy Palette's canonical Mac mark.
+            // Pixel monitor frame, derived from Kana's canonical Mac mark.
             NSRect(x: 4, y: 15, width: 10, height: 2).fill()
             NSRect(x: 3, y: 8, width: 2, height: 8).fill()
             NSRect(x: 13, y: 8, width: 2, height: 8).fill()
@@ -29,7 +29,7 @@ import AppKit
             return true
         }
         image.isTemplate = true
-        image.accessibilityDescription = "Handy Palette"
+        image.accessibilityDescription = "Kana"
         return image
     }()
 }

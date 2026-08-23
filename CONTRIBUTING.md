@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping Handy Palette stay small, private, and dependable.
+Thank you for helping Kana stay small, private, and dependable.
 
 Use [REVIEWING.md](REVIEWING.md) as the standing review standard for native interaction, Swift architecture, clipboard privacy, the website, catalog changes, iPhone work, and releases.
 
@@ -10,11 +10,11 @@ Run the local verification loop:
 
 ```sh
 swift build
-swift run HandyChecks
-swift run -c release Handy --check-search-performance
-swift run -c release Handy --check-focus
-swift run -c release Handy --check-snippet-focus
-swift run -c release Handy --check-keyboard
+swift run KanaChecks
+swift run -c release Kana --check-search-performance
+swift run -c release Kana --check-focus
+swift run -c release Kana --check-snippet-focus
+swift run -c release Kana --check-keyboard
 npm ci
 npm run test:web
 ```

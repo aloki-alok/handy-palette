@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate Handy's committed catalog from pinned, licensed sources."""
+"""Regenerate Kana's committed catalog from pinned, licensed sources."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "Sources/HandyCore/Resources/starter-library.json"
+OUTPUT = ROOT / "Sources/KanaCore/Resources/starter-library.json"
 
 KAOMOJI_COMMIT = "4a11807390f1396d075eccc9715dc467680396f6"
 EMOJI_COMMIT = "b4da69426d5dc6e8c8c02c09b163ff3e7160b316"
@@ -33,7 +33,7 @@ SEED_ITEMS = [
 
 
 def download(url: str) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": "Handy catalog updater"})
+    request = urllib.request.Request(url, headers={"User-Agent": "Kana catalog updater"})
     with urllib.request.urlopen(request, timeout=30) as response:
         return response.read().decode("utf-8")
 

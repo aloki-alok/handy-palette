@@ -1,7 +1,7 @@
 import Foundation
 import Darwin
 
-public enum HandyResources {
+public enum KanaResources {
     public static func starterCatalogURL(appResourceURL: URL? = Bundle.main.resourceURL) -> URL? {
         if let appResourceURL {
             let appCatalogURL = appResourceURL.appendingPathComponent("starter-library.json")
@@ -13,15 +13,15 @@ public enum HandyResources {
     }
 }
 
-public struct HandyLibrary: Codable, Equatable, Sendable {
+public struct KanaLibrary: Codable, Equatable, Sendable {
     public static let currentVersion = 2
 
     public var version: Int
     public var catalogRevision: Int
-    public var categories: [HandyCategory]
-    public var items: [HandyItem]
+    public var categories: [KanaCategory]
+    public var items: [KanaItem]
 
-    public init(version: Int, catalogRevision: Int = 0, categories: [HandyCategory] = [], items: [HandyItem]) {
+    public init(version: Int, catalogRevision: Int = 0, categories: [KanaCategory] = [], items: [KanaItem]) {
         self.version = version
         self.catalogRevision = catalogRevision
         self.items = items
@@ -34,23 +34,23 @@ public struct HandyLibrary: Codable, Equatable, Sendable {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         version = try values.decode(Int.self, forKey: .version)
         catalogRevision = try values.decodeIfPresent(Int.self, forKey: .catalogRevision) ?? 0
-        items = try values.decode([HandyItem].self, forKey: .items)
-        categories = try values.decodeIfPresent([HandyCategory].self, forKey: .categories) ?? Self.categoriesInferred(from: items)
+        items = try values.decode([KanaItem].self, forKey: .items)
+        categories = try values.decodeIfPresent([KanaCategory].self, forKey: .categories) ?? Self.categoriesInferred(from: items)
     }
 
-    public static let starter: HandyLibrary = {
-        guard let url = HandyResources.starterCatalogURL(),
+    public static let starter: KanaLibrary = {
+        guard let url = KanaResources.starterCatalogURL(),
               let data = try? Data(contentsOf: url),
-              let library = try? JSONDecoder().decode(HandyLibrary.self, from: data) else {
-            fatalError("HandyCore is missing its versioned starter library resource.")
+              let library = try? JSONDecoder().decode(KanaLibrary.self, from: data) else {
+            fatalError("KanaCore is missing its versioned starter library resource.")
         }
         return library
     }()
 
-    public func matches(_ query: String, limit: Int? = nil) -> [HandyItem] {
+    public func matches(_ query: String, limit: Int? = nil) -> [KanaItem] {
         let normalized = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let categoriesByID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
-        let ranked = items.compactMap { item -> (item: HandyItem, score: Int)? in
+        let ranked = items.compactMap { item -> (item: KanaItem, score: Int)? in
             let score = item.searchScore(for: normalized, category: categoriesByID[item.categoryID])
             return normalized.isEmpty || score > 0 ? (item, score) : nil
         }.sorted { lhs, rhs in
@@ -64,7 +64,7 @@ public struct HandyLibrary: Codable, Equatable, Sendable {
         return Array(values.prefix(limit))
     }
 
-    public func recentItems(limit: Int = 10) -> [HandyItem] {
+    public func recentItems(limit: Int = 10) -> [KanaItem] {
         Array(items.filter { $0.lastUsedAt != nil }.sorted {
             if $0.lastUsedAt != $1.lastUsedAt { return ($0.lastUsedAt ?? .distantPast) > ($1.lastUsedAt ?? .distantPast) }
             if $0.useCount != $1.useCount { return $0.useCount > $1.useCount }
@@ -73,7 +73,7 @@ public struct HandyLibrary: Codable, Equatable, Sendable {
     }
 
     /// Favorites, most recently starred first. Items pinned before `pinnedAt` existed keep catalog order at the end.
-    public func favoriteItems() -> [HandyItem] {
+    public func favoriteItems() -> [KanaItem] {
         items.enumerated().filter(\.element.isPinned).sorted { lhs, rhs in
             switch (lhs.element.pinnedAt, rhs.element.pinnedAt) {
             case let (left?, right?): return left == right ? lhs.offset < rhs.offset : left > right
@@ -96,7 +96,7 @@ public struct HandyLibrary: Codable, Equatable, Sendable {
         return items[index].isPinned
     }
 
-    public mutating func mergeCatalogUpdates(from catalog: HandyLibrary) -> Bool {
+    public mutating func mergeCatalogUpdates(from catalog: KanaLibrary) -> Bool {
         guard catalogRevision < catalog.catalogRevision else { return false }
         let existingCategories = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
         let catalogIDs = Set(catalog.categories.map(\.id))
@@ -110,14 +110,14 @@ public struct HandyLibrary: Codable, Equatable, Sendable {
         return true
     }
 
-    private static func categoriesInferred(from items: [HandyItem]) -> [HandyCategory] {
+    private static func categoriesInferred(from items: [KanaItem]) -> [KanaCategory] {
         Array(Set(items.map(\.categoryID))).sorted().enumerated().map { index, id in
-            HandyCategory(id: id, title: id.replacingOccurrences(of: "-", with: " ").capitalized, symbol: "square.grid.2x2", webSymbol: "squares-four", order: index)
+            KanaCategory(id: id, title: id.replacingOccurrences(of: "-", with: " ").capitalized, symbol: "square.grid.2x2", webSymbol: "squares-four", order: index)
         }
     }
 }
 
-public struct HandyCategory: Codable, Equatable, Identifiable, Sendable {
+public struct KanaCategory: Codable, Equatable, Identifiable, Sendable {
     public let id: String
     public let title: String
     public let symbol: String
@@ -150,7 +150,7 @@ public struct HandyCategory: Codable, Equatable, Identifiable, Sendable {
     }
 }
 
-public struct HandyItem: Codable, Equatable, Identifiable, Sendable {
+public struct KanaItem: Codable, Equatable, Identifiable, Sendable {
     public let id: String
     public let text: String
     public let title: String
@@ -213,7 +213,7 @@ public struct HandyItem: Codable, Equatable, Identifiable, Sendable {
         return "kaomoji"
     }
 
-    public func searchScore(for query: String, category: HandyCategory? = nil) -> Int {
+    public func searchScore(for query: String, category: KanaCategory? = nil) -> Int {
         guard !query.isEmpty else { return 1 }
         let title = title.lowercased()
         let tags = ([categoryID, category?.title ?? ""] + tags).joined(separator: " ").lowercased()
@@ -240,9 +240,9 @@ public enum LibraryRepositoryError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .unsupportedVersion(let version): return "Handy library version \(version) is newer than this app supports."
-        case .fileTooLarge: return "The Handy library is larger than 5 MB."
-        case .tooManyItems: return "The Handy library has more than 5,000 items."
+        case .unsupportedVersion(let version): return "Kana library version \(version) is newer than this app supports."
+        case .fileTooLarge: return "The Kana library is larger than 5 MB."
+        case .tooManyItems: return "The Kana library has more than 5,000 items."
         case .invalidID(let id): return "Item id \(id) is invalid."
         case .invalidTitle(let id): return "Item \(id) has an invalid title."
         case .invalidText(let id): return "Item \(id) has too much text."
@@ -265,12 +265,10 @@ public struct LibraryRepository {
     }
 
     public static var defaultURL: URL {
-        let folder = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Handy", isDirectory: true)
-        return folder.appendingPathComponent("library.json")
+        KanaSupportFolder.url(for: "library.json")
     }
 
-    public func load() throws -> HandyLibrary {
+    public func load() throws -> KanaLibrary {
         try withExclusiveLock {
             guard fileManager.fileExists(atPath: url.path) else {
                 try saveUnlocked(.starter)
@@ -282,13 +280,13 @@ public struct LibraryRepository {
         }
     }
 
-    public func save(_ library: HandyLibrary) throws {
+    public func save(_ library: KanaLibrary) throws {
         try withExclusiveLock { try saveUnlocked(library) }
     }
 
-    public func update(_ change: (inout HandyLibrary) throws -> Void) throws -> HandyLibrary {
+    public func update(_ change: (inout KanaLibrary) throws -> Void) throws -> KanaLibrary {
         try withExclusiveLock {
-            var library: HandyLibrary
+            var library: KanaLibrary
             if fileManager.fileExists(atPath: url.path) {
                 library = try readLibrary(from: url)
                 _ = library.mergeCatalogUpdates(from: .starter)
@@ -301,7 +299,7 @@ public struct LibraryRepository {
         }
     }
 
-    private func saveUnlocked(_ library: HandyLibrary) throws {
+    private func saveUnlocked(_ library: KanaLibrary) throws {
         try validate(library)
         let directory = url.deletingLastPathComponent()
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -326,7 +324,7 @@ public struct LibraryRepository {
         return try operation()
     }
 
-    public func importLibrary(from sourceURL: URL) throws -> HandyLibrary {
+    public func importLibrary(from sourceURL: URL) throws -> KanaLibrary {
         let imported = try readLibrary(from: sourceURL)
         try save(imported)
         return imported
@@ -337,8 +335,8 @@ public struct LibraryRepository {
         try libraryData(library).write(to: destinationURL, options: .atomic)
     }
 
-    private func validate(_ library: HandyLibrary) throws {
-        guard library.version == HandyLibrary.currentVersion else { throw LibraryRepositoryError.unsupportedVersion(library.version) }
+    private func validate(_ library: KanaLibrary) throws {
+        guard library.version == KanaLibrary.currentVersion else { throw LibraryRepositoryError.unsupportedVersion(library.version) }
         guard library.items.count <= 5_000 else { throw LibraryRepositoryError.tooManyItems }
         guard library.categories.count <= 100 else { throw LibraryRepositoryError.invalidCategory("limit") }
         let categoryIDs = Set(library.categories.map(\.id))
@@ -366,17 +364,17 @@ public struct LibraryRepository {
         }
     }
 
-    private func readLibrary(from sourceURL: URL) throws -> HandyLibrary {
+    private func readLibrary(from sourceURL: URL) throws -> KanaLibrary {
         let size = (try fileManager.attributesOfItem(atPath: sourceURL.path)[.size] as? NSNumber)?.intValue ?? 0
         guard size <= 5_000_000 else { throw LibraryRepositoryError.fileTooLarge }
-        var library = try JSONDecoder().decode(HandyLibrary.self, from: Data(contentsOf: sourceURL))
-        guard (1...HandyLibrary.currentVersion).contains(library.version) else { throw LibraryRepositoryError.unsupportedVersion(library.version) }
-        library.version = HandyLibrary.currentVersion
+        var library = try JSONDecoder().decode(KanaLibrary.self, from: Data(contentsOf: sourceURL))
+        guard (1...KanaLibrary.currentVersion).contains(library.version) else { throw LibraryRepositoryError.unsupportedVersion(library.version) }
+        library.version = KanaLibrary.currentVersion
         try validate(library)
         return library
     }
 
-    private func libraryData(_ library: HandyLibrary) throws -> Data {
+    private func libraryData(_ library: KanaLibrary) throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return try encoder.encode(library)

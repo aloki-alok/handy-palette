@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - docs/**
-      - Sources/HandyCore/Resources/starter-library.json
+      - Sources/KanaCore/Resources/starter-library.json
       - Scripts/build_pages.sh
       - Scripts/serve_pages.sh
       - Tests/web/**
