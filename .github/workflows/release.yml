@@ -36,6 +36,12 @@ jobs:
           swift run KanaChecks
           swift run -c release Kana --check-search-performance
           npm ci
+          npx playwright install chromium
+          # Build the Pages artifact on its own so a failure here is not reported
+          # later as an opaque webServer timeout.
+          ./Scripts/build_pages.sh "$RUNNER_TEMP/pages-check"
+          test -s "$RUNNER_TEMP/pages-check/index.html"
+          test -s "$RUNNER_TEMP/pages-check/catalog.json"
           npm run test:web
       - name: Package arm64 app archive
         run: ./Scripts/package_macos_app.sh "${TAG#v}" "$RUNNER_TEMP/release"
