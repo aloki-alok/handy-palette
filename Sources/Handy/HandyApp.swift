@@ -1,15 +1,11 @@
 import AppKit
 import SwiftUI
+import HandyShared
 
 @main
 struct HandyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-
-    init() {
-        if let exitCode = HandyCLI.runIfRequested(Array(CommandLine.arguments.dropFirst())) {
-            exit(exitCode)
-        }
-    }
+    @State private var loginItem = LoginItemController.shared
 
     var body: some Scene {
         MenuBarExtra {
@@ -19,6 +15,23 @@ struct HandyApp: App {
             Button("Reveal library.json") { appDelegate.revealLibrary() }
             Button(appDelegate.isClipboardHistoryEnabled ? "Disable clipboard history" : "Enable clipboard history") {
                 appDelegate.toggleClipboardHistory()
+            }
+            Divider()
+            Toggle(
+                "Open at login",
+                isOn: Binding(
+                    get: { loginItem.isEnabled },
+                    set: { loginItem.setEnabled($0) }
+                )
+            )
+                .disabled(!loginItem.isPackagedApplication)
+                .onAppear { loginItem.refresh() }
+            if loginItem.needsSystemSettings {
+                Button("Open Login Items settings") { loginItem.openSystemSettings() }
+            }
+            if let errorMessage = loginItem.errorMessage {
+                Text(errorMessage)
+                Button("Dismiss") { loginItem.dismissError() }
             }
             Divider()
             Text("Option-Command-K")
@@ -35,6 +48,7 @@ struct HandyApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var palette = PaletteController()
     private var hotKey: GlobalHotKey?
+    private let loginItem = LoginItemController.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -57,8 +71,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if CommandLine.arguments.contains("--check-window") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                print("Handy palette: \(self.palette.diagnosticState)")
-                exit(self.palette.diagnosticState.contains("visible=true occluded=false") ? 0 : 1)
+                let state = self.palette.diagnosticState
+                print("Handy palette: \(state)")
+                exit(state.contains("visible=true") && state.contains("occluded=false") ? 0 : 1)
             }
         }
         if CommandLine.arguments.contains("--check-keyboard") {
@@ -93,9 +108,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        if CommandLine.arguments.contains("--check-login-item") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                print("Handy login item: \(self.loginItem.diagnosticState)")
+                exit(self.loginItem.isPackagedApplication ? 0 : 1)
+            }
+        }
     }
 
     func openPalette() { palette.toggle() }
+
+    func showPalette() { palette.show() }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showPalette()
+        return true
+    }
 
     func revealLibrary() { palette.revealLibrary() }
     func newSnippet() { palette.requestNewCustomItem() }

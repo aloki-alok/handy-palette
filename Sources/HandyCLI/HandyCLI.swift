@@ -1,20 +1,20 @@
 import AppKit
 import Foundation
 import HandyCore
+import HandyShared
 
 @MainActor
 enum HandyCLI {
-    static func runIfRequested(_ rawArguments: [String]) -> Int32? {
-        guard let command = rawArguments.first else { return nil }
-        let appArguments = [
-            "open", "--open", "--check-window", "--check-keyboard", "--check-focus",
-            "--check-snippet-focus", "--check-search-performance"
-        ]
-        if appArguments.contains(command) { return nil }
-
+    static func run(_ rawArguments: [String]) -> Int32 {
         do {
+            guard let command = rawArguments.first else {
+                print(help)
+                return 0
+            }
             let arguments = Array(rawArguments.dropFirst())
             switch command {
+            case "open":
+                try openApplication()
             case "--version", "version":
                 print("Handy Palette \(HandyVersion.current)")
             case "--help", "help":
@@ -50,6 +50,25 @@ enum HandyCLI {
         }
     }
 
+    private static func openApplication() throws {
+        let executableURL = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
+        let appURL = executableURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        guard appURL.pathExtension == "app" else {
+            throw CLIError("The open command is available from the Handy Palette.app helper.")
+        }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = [appURL.path, "--args", "open"]
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            throw CLIError("Handy Palette could not be opened.")
+        }
+    }
+
     private static func list(_ arguments: [String]) throws {
         let options = try Options(arguments)
         let library = try repository(from: arguments).load()
@@ -69,7 +88,7 @@ enum HandyCLI {
         guard !query.isEmpty else { throw CLIError("Usage: handy-palette search <query>") }
         let library = try repository(from: arguments).load()
         for item in library.matches(query) { printItem(item) }
-        if UserDefaults.standard.bool(forKey: "clipboardHistoryEnabled") {
+        if HandyPreferences.clipboardHistoryEnabled {
             let history = try clipboardRepository(from: arguments).load()
             for entry in history.matches(query) { print("clipboard\t\(entry.id.uuidString.lowercased())\t\(singleLine(entry.text))") }
         }
@@ -171,12 +190,12 @@ enum HandyCLI {
         guard let action = options.positionals.first else { throw CLIError("Usage: handy-palette clipboard <status|enable|disable|list|clear>") }
         switch action {
         case "status":
-            print(UserDefaults.standard.bool(forKey: "clipboardHistoryEnabled") ? "enabled" : "disabled")
+            print(HandyPreferences.clipboardHistoryEnabled ? "enabled" : "disabled")
         case "enable":
-            UserDefaults.standard.set(true, forKey: "clipboardHistoryEnabled")
+            HandyPreferences.clipboardHistoryEnabled = true
             print("enabled")
         case "disable":
-            UserDefaults.standard.set(false, forKey: "clipboardHistoryEnabled")
+            HandyPreferences.clipboardHistoryEnabled = false
             print("disabled")
         case "list":
             for entry in try clipboardRepository(from: arguments).load().entries {
@@ -272,5 +291,12 @@ enum HandyCLI {
         let message: String
         init(_ message: String) { self.message = message }
         var errorDescription: String? { message }
+    }
+}
+
+@main
+struct HandyCLIExecutable {
+    static func main() {
+        exit(HandyCLI.run(Array(CommandLine.arguments.dropFirst())))
     }
 }

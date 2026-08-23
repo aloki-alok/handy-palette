@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import HandyCore
+import HandyShared
 
 private final class PalettePanel: NSPanel {
     override var canBecomeKey: Bool { true }
@@ -102,6 +103,12 @@ final class PaletteController {
     }
 
     func show() {
+        if let panel, panel.isVisible {
+            NSApp.activate(ignoringOtherApps: true)
+            panel.makeKeyAndOrderFront(nil)
+            panel.orderFrontRegardless()
+            return
+        }
         state.reset()
         let view = PaletteView(
             store: store,

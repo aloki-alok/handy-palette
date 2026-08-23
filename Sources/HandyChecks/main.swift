@@ -10,6 +10,20 @@ struct HandyChecks {
         }
 
         let library = HandyLibrary.starter
+        let catalogDirectory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("handy-catalog-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: catalogDirectory) }
+        do {
+            try FileManager.default.createDirectory(at: catalogDirectory, withIntermediateDirectories: true)
+            let appCatalog = catalogDirectory.appendingPathComponent("starter-library.json")
+            try Data("{\"version\":2,\"catalogRevision\":0,\"categories\":[],\"items\":[]}".utf8).write(to: appCatalog)
+            check(
+                HandyResources.starterCatalogURL(appResourceURL: catalogDirectory)?.standardizedFileURL == appCatalog.standardizedFileURL,
+                "App Resources should take precedence for the starter catalog"
+            )
+        } catch {
+            failures.append("Starter catalog resource lookup failed: \(error.localizedDescription)")
+        }
         let happy = library.matches("happy")
         check(happy.first?.id == "happy", "Exact title should rank first")
         check(!happy.contains(where: { $0.id == "shrug" }), "Unmatched entries should be excluded")

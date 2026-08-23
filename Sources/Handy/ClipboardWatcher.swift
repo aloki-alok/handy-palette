@@ -1,5 +1,6 @@
 import AppKit
 import HandyCore
+import HandyShared
 
 @MainActor
 final class ClipboardWatcher {

@@ -1,6 +1,18 @@
 import Foundation
 import Darwin
 
+public enum HandyResources {
+    public static func starterCatalogURL(appResourceURL: URL? = Bundle.main.resourceURL) -> URL? {
+        if let appResourceURL {
+            let appCatalogURL = appResourceURL.appendingPathComponent("starter-library.json")
+            if FileManager.default.isReadableFile(atPath: appCatalogURL.path) {
+                return appCatalogURL
+            }
+        }
+        return Bundle.module.url(forResource: "starter-library", withExtension: "json")
+    }
+}
+
 public struct HandyLibrary: Codable, Equatable, Sendable {
     public static let currentVersion = 2
 
@@ -27,7 +39,7 @@ public struct HandyLibrary: Codable, Equatable, Sendable {
     }
 
     public static let starter: HandyLibrary = {
-        guard let url = Bundle.module.url(forResource: "starter-library", withExtension: "json"),
+        guard let url = HandyResources.starterCatalogURL(),
               let data = try? Data(contentsOf: url),
               let library = try? JSONDecoder().decode(HandyLibrary.self, from: data) else {
             fatalError("HandyCore is missing its versioned starter library resource.")

@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import HandyCore
+import HandyShared
 import AppKit
 
 @MainActor @Observable
@@ -9,13 +10,11 @@ final class LibraryStore {
     private let clipboardRepository: ClipboardHistoryRepository
     private(set) var library: HandyLibrary
     private(set) var clipboardHistory: ClipboardHistory
-    private(set) var isClipboardHistoryEnabled = UserDefaults.standard.bool(forKey: "clipboardHistoryEnabled")
+    private(set) var isClipboardHistoryEnabled = HandyPreferences.clipboardHistoryEnabled
     var errorMessage: String?
     private var clipboardWatcher: ClipboardWatcher?
     @ObservationIgnored private var cachedSearchQuery: String?
     @ObservationIgnored private var cachedSearchResults: [ShelfResult] = []
-
-    private static let clipboardEnabledKey = "clipboardHistoryEnabled"
 
     init(repository: LibraryRepository = LibraryRepository(), clipboardRepository: ClipboardHistoryRepository = ClipboardHistoryRepository()) {
         self.repository = repository
@@ -78,7 +77,7 @@ final class LibraryStore {
 
     func setClipboardHistoryEnabled(_ enabled: Bool) {
         isClipboardHistoryEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: Self.clipboardEnabledKey)
+        HandyPreferences.clipboardHistoryEnabled = enabled
         enabled ? clipboardWatcher?.start() : clipboardWatcher?.stop()
     }
 
