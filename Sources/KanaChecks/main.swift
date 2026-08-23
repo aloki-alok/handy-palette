@@ -71,6 +71,17 @@ struct KanaChecks {
         check(secondRun == adopted, "Adoption should be idempotent")
         try? FileManager.default.removeItem(at: sandbox)
 
+        // Homebrew installs the command as a symlink, so a lookup relative to the symlink
+        // finds nothing. Every shipped layout has to resolve without the build directory.
+        let helpers = URL(fileURLWithPath: "/Apps/Kana.app/Contents/Helpers/kana")
+        let helperCandidates = KanaResources.candidates(appResourceURL: nil, executableURL: helpers).map(\.path)
+        check(helperCandidates.contains("/Apps/Kana.app/Contents/Resources/starter-library.json"),
+              "A helper beside an app bundle should look in the bundle's Resources")
+        check(helperCandidates.contains("/Apps/Kana.app/Contents/Resources/Kana_KanaCore.bundle/starter-library.json"),
+              "A helper beside an app bundle should look inside the copied resource bundle")
+        check(helperCandidates.contains("/Apps/Kana.app/Contents/Helpers/starter-library.json"),
+              "A helper should also look beside itself")
+
         var clipboardHistory = ClipboardHistory()
         check(clipboardHistory.capture("first", at: Date(timeIntervalSince1970: 1)), "Clipboard should accept valid text")
         check(!clipboardHistory.capture("first", at: Date(timeIntervalSince1970: 2)), "Clipboard should reject adjacent duplicates")

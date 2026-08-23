@@ -2,14 +2,37 @@ import Foundation
 import Darwin
 
 public enum KanaResources {
-    public static func starterCatalogURL(appResourceURL: URL? = Bundle.main.resourceURL) -> URL? {
-        if let appResourceURL {
-            let appCatalogURL = appResourceURL.appendingPathComponent("starter-library.json")
-            if FileManager.default.isReadableFile(atPath: appCatalogURL.path) {
-                return appCatalogURL
-            }
+    private static let catalogName = "starter-library.json"
+    private static let resourceBundleName = "Kana_KanaCore.bundle"
+
+    public static func starterCatalogURL(
+        appResourceURL: URL? = Bundle.main.resourceURL,
+        executableURL: URL? = Bundle.main.executableURL
+    ) -> URL? {
+        for candidate in candidates(appResourceURL: appResourceURL, executableURL: executableURL) {
+            if FileManager.default.isReadableFile(atPath: candidate.path) { return candidate }
         }
+        // Bundle.module traps when it cannot find its bundle, so it is the last resort.
         return Bundle.module.url(forResource: "starter-library", withExtension: "json")
+    }
+
+    /// Every layout the catalog ships in: an app bundle, a helper beside an app bundle, and a
+    /// loose build directory. The executable is resolved first because Homebrew installs the
+    /// command as a symlink, and a bundle lookup relative to a symlink finds nothing.
+    public static func candidates(appResourceURL: URL?, executableURL: URL?) -> [URL] {
+        var urls: [URL] = []
+        if let appResourceURL {
+            urls.append(appResourceURL.appendingPathComponent(catalogName))
+            urls.append(appResourceURL.appendingPathComponent(resourceBundleName).appendingPathComponent(catalogName))
+        }
+        if let directory = executableURL?.resolvingSymlinksInPath().deletingLastPathComponent() {
+            let siblingResources = directory.deletingLastPathComponent().appendingPathComponent("Resources", isDirectory: true)
+            urls.append(directory.appendingPathComponent(catalogName))
+            urls.append(directory.appendingPathComponent(resourceBundleName).appendingPathComponent(catalogName))
+            urls.append(siblingResources.appendingPathComponent(catalogName))
+            urls.append(siblingResources.appendingPathComponent(resourceBundleName).appendingPathComponent(catalogName))
+        }
+        return urls
     }
 }
 

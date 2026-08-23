@@ -12,8 +12,8 @@ Run the local verification loop:
 swift build
 swift run KanaChecks
 swift run -c release Kana --check-search-performance
-./Scripts/package_macos_app.sh 0.3.0 .build/package-check
-ditto -x -k .build/package-check/Kana-0.3.0-arm64.zip .build/package-check/app
+./Scripts/package_macos_app.sh 0.3.1 .build/package-check
+ditto -x -k .build/package-check/Kana-0.3.1-arm64.zip .build/package-check/app
 .build/package-check/app/Kana.app/Contents/MacOS/Kana --check-window
 .build/package-check/app/Kana.app/Contents/MacOS/Kana --check-focus
 .build/package-check/app/Kana.app/Contents/MacOS/Kana --check-background-focus

@@ -77,9 +77,19 @@ jobs:
           lipo -archs "$app/Contents/Helpers/kana" | grep -wx arm64
           codesign --verify --deep --strict --verbose=2 "$app"
           test "$("$app/Contents/Helpers/kana" version)" = "Kana ${TAG#v}"
+          # SwiftPM bakes an absolute build-directory path into the resource lookup, which
+          # exists on this runner and hid a crash that every user hit. Hide it, then run the
+          # command through a symlink the way Homebrew installs it.
+          mv .build/arm64-apple-macosx/release/Kana_KanaCore.bundle "$RUNNER_TEMP/hidden-resource-bundle"
+          mkdir -p "$RUNNER_TEMP/bin"
+          ln -sf "$app/Contents/Helpers/kana" "$RUNNER_TEMP/bin/kana"
           fresh_library="$RUNNER_TEMP/fresh-library/library.json"
-          "$app/Contents/Helpers/kana" categories --library "$fresh_library" | grep -q $'kaomoji\tKaomoji'
+          "$RUNNER_TEMP/bin/kana" categories --library "$fresh_library" | grep -q $'kaomoji\tKaomoji'
           test -s "$fresh_library"
+          symlink_library="$RUNNER_TEMP/symlink-library/library.json"
+          "$RUNNER_TEMP/bin/kana" favorite add wave --library "$symlink_library"
+          "$RUNNER_TEMP/bin/kana" favorites list --library "$symlink_library" | grep -q wave
+          mv "$RUNNER_TEMP/hidden-resource-bundle" .build/arm64-apple-macosx/release/Kana_KanaCore.bundle
           process_pattern="^$app/Contents/MacOS/Kana( |$)"
           "$app/Contents/Helpers/kana" open
           for _ in {1..20}; do
