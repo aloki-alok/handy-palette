@@ -1,0 +1,104 @@
+name: Release macOS app
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing v* tag to release
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    timeout-minutes: 20
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+      - name: Confirm arm64 runner
+        run: test "$(uname -m)" = arm64
+      - name: Confirm tag version
+        run: |
+          test "${TAG}" = "v$(sed -n 's/.*HandyVersion.current = "\([^"]*\)".*/\1/p' Sources/HandyShared/HandyVersion.swift)"
+      - name: Build and verify source
+        run: |
+          swift build
+          swift run HandyChecks
+          swift run -c release Handy --check-search-performance
+          swift run -c release Handy --check-focus
+          swift run -c release Handy --check-snippet-focus
+          swift run -c release Handy --check-keyboard
+          npm ci
+          npm run test:web
+      - name: Package arm64 app archive
+        run: ./Scripts/package_macos_app.sh "${TAG#v}" "$RUNNER_TEMP/release"
+      - name: Verify release archive
+        timeout-minutes: 5
+        run: |
+          archive="$RUNNER_TEMP/release/Handy-Palette-${TAG#v}-arm64.zip"
+          test -f "$archive"
+          shasum -a 256 "$archive"
+          unpacked="$RUNNER_TEMP/unpacked"
+          mkdir -p "$unpacked"
+          ditto -x -k "$archive" "$unpacked"
+          app="$unpacked/Handy Palette.app"
+          test "$(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist")" = "io.github.aloki-alok.handy-palette"
+          test "$(plutil -extract CFBundleShortVersionString raw "$app/Contents/Info.plist")" = "${TAG#v}"
+          test "$(plutil -extract CFBundleVersion raw "$app/Contents/Info.plist")" = "${TAG#v}"
+          test "$(plutil -extract LSUIElement raw "$app/Contents/Info.plist")" = "true"
+          test -f "$app/Contents/Resources/HandyPalette.icns"
+          test -f "$app/Contents/Resources/Handy_HandyCore.bundle/starter-library.json"
+          test -f "$app/Contents/Resources/starter-library.json"
+          lipo -archs "$app/Contents/MacOS/HandyPalette" | grep -wx arm64
+          lipo -archs "$app/Contents/Helpers/handy-palette" | grep -wx arm64
+          codesign --verify --deep --strict --verbose=2 "$app"
+          test "$("$app/Contents/Helpers/handy-palette" version)" = "Handy Palette ${TAG#v}"
+          fresh_library="$RUNNER_TEMP/fresh-library/library.json"
+          "$app/Contents/Helpers/handy-palette" categories --library "$fresh_library" | grep -q $'kaomoji\tKaomoji'
+          test -s "$fresh_library"
+          process_pattern="^$app/Contents/MacOS/HandyPalette( |$)"
+          "$app/Contents/Helpers/handy-palette" open
+          for _ in {1..20}; do
+            app_pid="$(pgrep -f "$process_pattern" | head -1 || true)"
+            test -n "$app_pid" && break
+            sleep 0.25
+          done
+          test -n "${app_pid:-}"
+          "$app/Contents/Helpers/handy-palette" open
+          sleep 0.5
+          test "$(pgrep -f "$process_pattern" | wc -l | tr -d ' ')" = "1"
+          kill "$app_pid"
+          for _ in {1..20}; do
+            kill -0 "$app_pid" 2>/dev/null || break
+            sleep 0.25
+          done
+          if kill -0 "$app_pid" 2>/dev/null; then
+            echo "Handy Palette did not stop after the launch check." >&2
+            exit 1
+          fi
+          "$app/Contents/MacOS/HandyPalette" --check-window
+          "$app/Contents/MacOS/HandyPalette" --check-focus
+          "$app/Contents/MacOS/HandyPalette" --check-snippet-focus
+          "$app/Contents/MacOS/HandyPalette" --check-keyboard
+          "$app/Contents/MacOS/HandyPalette" --check-search-performance
+          "$app/Contents/MacOS/HandyPalette" --check-login-item
+      - name: Upload GitHub Release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          archive="$RUNNER_TEMP/release/Handy-Palette-${TAG#v}-arm64.zip"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$archive" --clobber
+          else
+            gh release create "$TAG" "$archive" --title "$TAG" --generate-notes
+          fi
