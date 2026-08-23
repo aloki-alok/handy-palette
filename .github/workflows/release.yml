@@ -42,6 +42,17 @@ jobs:
           ./Scripts/build_pages.sh "$RUNNER_TEMP/pages-check"
           test -s "$RUNNER_TEMP/pages-check/index.html"
           test -s "$RUNNER_TEMP/pages-check/catalog.json"
+          # Prove the preview server answers before handing it to Playwright,
+          # whose only failure mode here is an unexplained timeout.
+          node Scripts/serve_pages.mjs 4199 "$RUNNER_TEMP/pages-check" &
+          probe=$!
+          for _ in {1..20}; do
+            curl -fsS http://127.0.0.1:4199/ >/dev/null && break
+            sleep 0.5
+          done
+          curl -fsS http://127.0.0.1:4199/ >/dev/null
+          curl -fsS http://127.0.0.1:4199/catalog.json >/dev/null
+          kill "$probe"
           npm run test:web
       - name: Package arm64 app archive
         run: ./Scripts/package_macos_app.sh "${TAG#v}" "$RUNNER_TEMP/release"
