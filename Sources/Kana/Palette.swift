@@ -34,19 +34,23 @@ final class PaletteController {
         }
     }
 
+    enum BackgroundFocusOutcome { case passed, failed, skipped }
+
     /// The hotkey path: another app owns the foreground when the palette opens.
-    func runBackgroundFocusDiagnostic(completion: @escaping (Bool, String) -> Void) {
+    func runBackgroundFocusDiagnostic(completion: @escaping (BackgroundFocusOutcome, String) -> Void) {
         hide()
         guard let other = NSWorkspace.shared.runningApplications.first(where: {
             $0.activationPolicy == .regular && $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
         }) else {
-            completion(false, "no other foreground app to yield to")
+            // A bare CI session has no foreground app to yield to. Say so rather than
+            // failing a release over a missing environment, and never call it a pass.
+            completion(.skipped, "no other foreground app to yield to")
             return
         }
         other.activate()
         waitForForeground(other, attemptsRemaining: 40) { yielded in
             guard yielded else {
-                completion(false, "could not yield the foreground to \(other.localizedName ?? "?")")
+                completion(.skipped, "could not yield the foreground to \(other.localizedName ?? "?")")
                 return
             }
             self.show()
@@ -55,7 +59,7 @@ final class PaletteController {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     let typed = self.state.query == "focus-probe"
                     completion(
-                        key && ownsTextInput && typed,
+                        key && ownsTextInput && typed ? .passed : .failed,
                         "yieldedTo=\(other.localizedName ?? "?") key=\(key) responder=\(responderName) input=\(typed)"
                     )
                 }

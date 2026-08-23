@@ -95,9 +95,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if CommandLine.arguments.contains("--check-background-focus") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.palette.runBackgroundFocusDiagnostic { passed, detail in
-                    print("Kana background focus: \(passed ? "passed" : "failed") (\(detail))")
-                    exit(passed ? 0 : 1)
+                self.palette.runBackgroundFocusDiagnostic { outcome, detail in
+                    let label: String
+                    switch outcome {
+                    case .passed: label = "passed"
+                    case .failed: label = "failed"
+                    case .skipped: label = "skipped"
+                    }
+                    print("Kana background focus: \(label) (\(detail))")
+                    exit(outcome == .failed ? 1 : 0)
                 }
             }
         }
