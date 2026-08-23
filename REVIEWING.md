@@ -96,6 +96,7 @@ swift build
 swift run HandyChecks
 swift run -c release Handy --check-search-performance
 swift run -c release Handy --check-focus
+swift run -c release Handy --check-background-focus
 swift run -c release Handy --check-snippet-focus
 swift run -c release Handy --check-keyboard
 npm ci

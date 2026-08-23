@@ -36,6 +36,7 @@ jobs:
           swift run HandyChecks
           swift run -c release Handy --check-search-performance
           swift run -c release Handy --check-focus
+          swift run -c release Handy --check-background-focus
           swift run -c release Handy --check-snippet-focus
           swift run -c release Handy --check-keyboard
           npm ci
@@ -88,6 +89,7 @@ jobs:
           fi
           "$app/Contents/MacOS/HandyPalette" --check-window
           "$app/Contents/MacOS/HandyPalette" --check-focus
+          "$app/Contents/MacOS/HandyPalette" --check-background-focus
           "$app/Contents/MacOS/HandyPalette" --check-snippet-focus
           "$app/Contents/MacOS/HandyPalette" --check-keyboard
           "$app/Contents/MacOS/HandyPalette" --check-search-performance

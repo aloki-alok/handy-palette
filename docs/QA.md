@@ -9,6 +9,7 @@ swift build
 swift run HandyChecks
 swift run -c release Handy --check-search-performance
 swift run -c release Handy --check-focus
+swift run -c release Handy --check-background-focus
 swift run -c release Handy --check-snippet-focus
 swift run -c release Handy --check-keyboard
 ./Scripts/package_macos_app.sh 0.2.0 .build/package-check
