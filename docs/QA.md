@@ -11,6 +11,7 @@ swift run -c release Handy --check-search-performance
 swift run -c release Handy --check-focus
 swift run -c release Handy --check-snippet-focus
 swift run -c release Handy --check-keyboard
+./Scripts/package_macos_app.sh 0.1.0 .build/package-check
 npm ci
 npm run test:web
 ```
@@ -22,6 +23,9 @@ The checks cover search ranking and limits, Unicode JSON round trips, coordinate
 | Scenario | Expected result |
 | --- | --- |
 | First launch | A starter `library.json` is created locally and the menu-bar item appears. |
+| Homebrew cask | The cask installs `Handy Palette.app` in Applications and exposes the `handy-palette` command. |
+| Command-line open | `handy-palette open` shows the palette on cold start and reuses the same process when already running. |
+| Open at login | The menu toggle registers and unregisters the app through the system Login Items service. |
 | Shortcut is available | `Option-Command-K` opens the shelf, search receives focus, and Escape closes it. |
 | Shortcut collision | The app shows an honest warning and remains reachable from the menu bar. |
 | Keyboard-only selection | Type a title or tag, use Up and Down, then Return. The exact selected item is copied. |
@@ -47,4 +51,4 @@ Password fields, secure-input applications, remote desktop sessions, and apps th
 
 ## GitHub Pages gate
 
-The Pages workflow builds its artifact from `docs/index.html`, the canonical icon, and the same generated catalog used by the app. Verify the HTTPS URL in light mode, dark mode, reduced-motion mode, and at 390 px width. The Playwright suite must pass search, section shortcuts, copy, Favorites, result limits, and mobile overflow. No signed app download link may appear until a signed, notarized `.app` release exists.
+The Pages workflow builds its artifact from `docs/index.html`, the canonical icon, and the same generated catalog used by the app. Verify the HTTPS URL in light mode, dark mode, reduced-motion mode, and at 390 px width. The Playwright suite must pass search, section shortcuts, copy, Favorites, result limits, and mobile overflow. Do not describe a build as signed or notarized unless the published artifact passes those checks.

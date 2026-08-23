@@ -25,16 +25,14 @@ The bundled library contains more than 2,300 kaomoji and emoji. Recents bring ba
 Install from the public Homebrew tap:
 
 ```sh
-brew install aloki-alok/tap/handy-palette
+brew install --cask aloki-alok/tap/handy-palette
 ```
 
-Start it now and at login:
+Open Handy Palette from Applications or Spotlight, then press `Option-Command-K` from any app. You can enable Open at login from its menu-bar menu.
 
-```sh
-brew services start aloki-alok/tap/handy-palette
-```
+On first launch, macOS may ask you to confirm opening Handy Palette in System Settings > Privacy & Security.
 
-Press `Option-Command-K` from any app. For a one-time foreground run instead:
+You can also open the palette from the command line:
 
 ```sh
 handy-palette open
@@ -49,8 +47,7 @@ swift run Handy
 To remove it cleanly:
 
 ```sh
-brew services stop handy-palette
-brew uninstall handy-palette
+brew uninstall --cask handy-palette
 ```
 
 ## One shelf, five useful views
@@ -173,9 +170,12 @@ The native diagnostics verify real macOS window focus, responder-chain text inse
 
 ```text
 Sources/HandyCore/   portable library, search, clipboard history, keyboard routing
-Sources/Handy/       macOS menu-bar app, palette, storage, and CLI
+Sources/HandyShared/ shared clipboard and preference bridges
+Sources/Handy/       macOS menu-bar app and palette
+Sources/HandyCLI/    command-line interface
 Sources/HandyChecks/ deterministic native verification
-Scripts/             catalog and Pages build tools
+Distribution/        macOS app bundle metadata
+Scripts/             catalog, packaging, and Pages build tools
 docs/                GitHub Pages source
 Tests/web/           browser interaction tests
 ```
