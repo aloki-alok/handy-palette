@@ -227,12 +227,18 @@ struct KanaChecks {
     }
 
     private static func checkPreferenceMigration(expectedLegacyValue: Bool?) -> Bool {
-        let identifier = UUID().uuidString
-        let suiteName = "io.github.aloki-alok.kana.tests.\(identifier)"
-        let legacyDomainName = "KanaTests.\(identifier)"
+        // Fixed domain names, wiped before use. cfprefsd flushes a suite's pending writes back
+        // to disk after the process asks for removal, so a fresh UUID per run left a preference
+        // file behind every time. Two reused domains cannot accumulate.
+        let suiteName = "io.github.aloki-alok.kana.checks"
+        let legacyDomainName = "KanaChecksLegacy"
+        for domain in [suiteName, legacyDomainName] {
+            UserDefaults.standard.removePersistentDomain(forName: domain)
+        }
         defer {
-            UserDefaults.standard.removePersistentDomain(forName: suiteName)
-            UserDefaults.standard.removePersistentDomain(forName: legacyDomainName)
+            for domain in [suiteName, legacyDomainName] {
+                UserDefaults.standard.removePersistentDomain(forName: domain)
+            }
         }
         if let expectedLegacyValue {
             UserDefaults.standard.setPersistentDomain(

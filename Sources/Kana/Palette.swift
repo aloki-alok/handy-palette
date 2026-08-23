@@ -1,4 +1,5 @@
 import AppKit
+import OSLog
 import SwiftUI
 import KanaCore
 import KanaShared
@@ -186,6 +187,22 @@ final class PaletteController {
         DispatchQueue.main.async { [weak self, weak panel] in
             guard let self, let panel, self.panel === panel, panel.isVisible else { return }
             panel.makeKeyAndOrderFront(nil)
+        }
+        reportFocusState(after: 0.35)
+        reportFocusState(after: 1.2)
+    }
+
+    /// Records what actually happened on a real open. A diagnostic that calls show() itself
+    /// does not reproduce a hotkey press arriving at a long-idle background app.
+    private func reportFocusState(after delay: TimeInterval) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self else { return }
+            let responder = self.panel?.firstResponder
+            let responderName = responder.map { String(describing: type(of: $0)) } ?? "nil"
+            let frontmost = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "?"
+            let detail = "open+\(delay)s active=\(NSApp.isActive) key=\(self.panel?.isKeyWindow == true)"
+                + " main=\(self.panel?.isMainWindow == true) responder=\(responderName) frontmost=\(frontmost)"
+            Logger(subsystem: "io.github.aloki-alok.kana", category: "focus").notice("\(detail, privacy: .public)")
         }
     }
 
