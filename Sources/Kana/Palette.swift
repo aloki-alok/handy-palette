@@ -1,5 +1,4 @@
 import AppKit
-import OSLog
 import SwiftUI
 import KanaCore
 import KanaShared
@@ -184,13 +183,33 @@ final class PaletteController {
         panel.makeKeyAndOrderFront(nil)
         panel.orderFrontRegardless()
         installKeyboardMonitor()
-        DispatchQueue.main.async { [weak self, weak panel] in
-            guard let self, let panel, self.panel === panel, panel.isVisible else { return }
-            panel.makeKeyAndOrderFront(nil)
+        claimFocus(for: panel, attemptsRemaining: 40)
+        if Self.logsFocusState {
+            reportFocusState(after: 0.35)
+            reportFocusState(after: 1.2)
         }
-        reportFocusState(after: 0.35)
-        reportFocusState(after: 1.2)
     }
+
+    /// A hotkey arriving at a long-idle accessory app does not activate it immediately, so the
+    /// panel can sit visible but not key while keystrokes go to the app behind it. Keep asking
+    /// until the panel holds key, then tell SwiftUI to focus the field: a focus request made
+    /// before the window is key is dropped, which leaves the rail proxy as first responder.
+    private func claimFocus(for panel: NSPanel, attemptsRemaining: Int) {
+        guard self.panel === panel, panel.isVisible else { return }
+        if panel.isKeyWindow {
+            state.searchFocusRequest += 1
+            return
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
+        panel.orderFrontRegardless()
+        guard attemptsRemaining > 1 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.025) { [weak self, weak panel] in
+            guard let self, let panel else { return }
+            self.claimFocus(for: panel, attemptsRemaining: attemptsRemaining - 1)
+        }
+    }
+    static let logsFocusState = CommandLine.arguments.contains("--log-focus")
 
     /// Records what actually happened on a real open. A diagnostic that calls show() itself
     /// does not reproduce a hotkey press arriving at a long-idle background app.
@@ -202,7 +221,7 @@ final class PaletteController {
             let frontmost = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "?"
             let detail = "open+\(delay)s active=\(NSApp.isActive) key=\(self.panel?.isKeyWindow == true)"
                 + " main=\(self.panel?.isMainWindow == true) responder=\(responderName) frontmost=\(frontmost)"
-            Logger(subsystem: "io.github.aloki-alok.kana", category: "focus").notice("\(detail, privacy: .public)")
+            FileHandle.standardError.write(Data(("kana-focus " + detail + "\n").utf8))
         }
     }
 

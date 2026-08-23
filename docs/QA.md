@@ -29,6 +29,7 @@ The checks cover search ranking and limits, Unicode JSON round trips, coordinate
 | --- | --- |
 | First launch | A starter `library.json` is created locally and the menu-bar item appears. |
 | Homebrew cask | The cask installs `Kana.app` in Applications and exposes the `kana` command. |
+| Hotkey focus | With another app frontmost, press `Option-Command-K` and type immediately. The characters must land in the search field. No automated check covers this: a Carbon hotkey arriving at an idle background app cannot be reproduced in process. Run the app with `--log-focus` to record `key=` and `responder=` on each open. |
 | Command-line open | `kana open` shows the palette on cold start and reuses the same process when already running. |
 | Open at login | The menu toggle registers and unregisters the app through the system Login Items service. |
 | Shortcut is available | `Option-Command-K` opens the shelf, search receives focus, and Escape closes it. |
