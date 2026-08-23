@@ -54,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         let arguments = Array(CommandLine.arguments.dropFirst())
         hotKey = GlobalHotKey { [weak self] in self?.openPalette() }
+        DispatchQueue.main.async { [weak self] in self?.palette.prewarm() }
         if hotKey?.register() != noErr {
             let alert = NSAlert()
             alert.messageText = "Kana could not register its shortcut"

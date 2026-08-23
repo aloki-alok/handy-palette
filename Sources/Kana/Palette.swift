@@ -14,6 +14,8 @@ final class PaletteController {
     private let state = PaletteState()
     private var panel: NSPanel?
     private var keyboardMonitor: Any?
+    private var deactivationObserver: NSObjectProtocol?
+    private var paletteHasHeldFocus = false
 
     var isClipboardHistoryEnabled: Bool { store.isClipboardHistoryEnabled }
     var diagnosticState: String {
@@ -137,7 +139,10 @@ final class PaletteController {
     }
 
     func toggle() {
-        if let panel, panel.isVisible { hide(); return }
+        // Only a focused palette should be dismissed by the shortcut. A palette left visible
+        // without focus has to be given focus, otherwise the press reads as the window
+        // vanishing when the user expected the caret to arrive.
+        if let panel, panel.isVisible, panel.isKeyWindow { hide(); return }
         show()
     }
 
@@ -149,6 +154,27 @@ final class PaletteController {
             return
         }
         state.reset()
+        paletteHasHeldFocus = false
+        let panel = preparedPanel()
+        panel.center()
+        NSApp.activate(ignoringOtherApps: true)
+        panel.makeKeyAndOrderFront(nil)
+        panel.orderFrontRegardless()
+        installKeyboardMonitor()
+        observeDeactivation()
+        claimFocus(for: panel, attemptsRemaining: 40)
+        if Self.logsFocusState {
+            reportFocusState(after: 0.35)
+            reportFocusState(after: 1.2)
+        }
+    }
+
+    /// Rebuilding the window and its SwiftUI view on every open costs time the user is already
+    /// typing into: the field only becomes first responder after the view mounts, so the first
+    /// characters land in the app behind. The panel is built once and reused.
+    @discardableResult
+    func preparedPanel() -> NSPanel {
+        if let panel { return panel }
         let view = PaletteView(
             store: store,
             state: state,
@@ -171,23 +197,23 @@ final class PaletteController {
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
-        panel.center()
         let hostingView = NSHostingView(rootView: view)
         hostingView.wantsLayer = true
         hostingView.layer?.cornerRadius = 12
         hostingView.layer?.cornerCurve = .continuous
         hostingView.layer?.masksToBounds = true
         panel.contentView = hostingView
+        // Force a layout pass now so the text field exists before the first open.
+        hostingView.layoutSubtreeIfNeeded()
         self.panel = panel
-        NSApp.activate(ignoringOtherApps: true)
-        panel.makeKeyAndOrderFront(nil)
-        panel.orderFrontRegardless()
-        installKeyboardMonitor()
-        claimFocus(for: panel, attemptsRemaining: 40)
-        if Self.logsFocusState {
-            reportFocusState(after: 0.35)
-            reportFocusState(after: 1.2)
-        }
+        return panel
+    }
+
+    /// Builds the window and mounts its SwiftUI view at launch so the first hotkey press does
+    /// not pay for construction while the user is already typing. It is never ordered on screen
+    /// here: doing that raced with a real open and left the panel off screen.
+    func prewarm() {
+        preparedPanel()
     }
 
     /// A hotkey arriving at a long-idle accessory app does not activate it immediately, so the
@@ -197,6 +223,7 @@ final class PaletteController {
     private func claimFocus(for panel: NSPanel, attemptsRemaining: Int) {
         guard self.panel === panel, panel.isVisible else { return }
         if panel.isKeyWindow {
+            paletteHasHeldFocus = true
             state.searchFocusRequest += 1
             return
         }
@@ -221,7 +248,37 @@ final class PaletteController {
             let frontmost = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "?"
             let detail = "open+\(delay)s active=\(NSApp.isActive) key=\(self.panel?.isKeyWindow == true)"
                 + " main=\(self.panel?.isMainWindow == true) responder=\(responderName) frontmost=\(frontmost)"
-            FileHandle.standardError.write(Data(("kana-focus " + detail + "\n").utf8))
+            // stderr goes nowhere when LaunchServices starts the app, which is how it actually
+            // runs, so the opt-in log has to land in a file.
+            let line = ISO8601DateFormatter().string(from: Date()) + " " + detail + "\n"
+            let logURL = KanaSupportFolder.url(for: "focus-log.txt")
+            if let handle = try? FileHandle(forWritingTo: logURL) {
+                handle.seekToEndOfFile()
+                handle.write(Data(line.utf8))
+                try? handle.close()
+            } else {
+                try? Data(line.utf8).write(to: logURL)
+            }
+        }
+    }
+
+    /// Clicking into another app leaves the palette on screen but not key, so the caret is gone
+    /// while the window is still there. Dismiss it instead of leaving that state visible.
+    private func observeDeactivation() {
+        guard deactivationObserver == nil else { return }
+        deactivationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let panel = self.panel, panel.isVisible else { return }
+                // Opening is a handshake: the app can briefly resign active before the panel
+                // takes key. Only dismiss a palette that actually held focus, otherwise the
+                // window hides itself on the way up.
+                guard self.paletteHasHeldFocus else { return }
+                self.hide()
+            }
         }
     }
 
