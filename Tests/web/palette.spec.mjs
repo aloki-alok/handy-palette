@@ -49,6 +49,18 @@ test('favorite controls update the Favorites shelf', async ({ page }) => {
   await expect(page.locator('.row').filter({ hasText: 'Wave' })).toHaveCount(0);
 });
 
+test('the newest favorite is listed first', async ({ page }) => {
+  await openPalette(page);
+  const search = page.getByLabel('Search everything');
+  await search.fill('wave');
+  await page.locator('.row').filter({ hasText: 'Wave' }).first().getByRole('button', { name: 'Add to favorites' }).click();
+  await search.fill('table flip');
+  await page.locator('.row').filter({ hasText: 'Table flip' }).first().getByRole('button', { name: 'Add to favorites' }).click();
+  await page.getByRole('button', { name: /Favorites, Command 2/ }).click();
+  await expect(page.locator('.row').first()).toContainText('Table flip');
+  await expect(page.locator('.row').nth(1)).toContainText('Wave');
+});
+
 test('broad search is capped and the mobile page does not overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openPalette(page);
