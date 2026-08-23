@@ -17,6 +17,6 @@ let package = Package(
             name: "HandyCLI",
             dependencies: ["HandyCore", "HandyShared"]
         ),
-        .executableTarget(name: "HandyChecks", dependencies: ["HandyCore"])
+        .executableTarget(name: "HandyChecks", dependencies: ["HandyCore", "HandyShared"])
     ]
 )

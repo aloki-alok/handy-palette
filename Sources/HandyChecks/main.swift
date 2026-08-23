@@ -1,5 +1,6 @@
 import Foundation
 import HandyCore
+import HandyShared
 
 @main
 struct HandyChecks {
@@ -10,6 +11,9 @@ struct HandyChecks {
         }
 
         let library = HandyLibrary.starter
+        check(checkPreferenceMigration(expectedLegacyValue: true), "Clipboard preference migration should preserve true")
+        check(checkPreferenceMigration(expectedLegacyValue: false), "Clipboard preference migration should preserve false")
+        check(checkPreferenceMigration(expectedLegacyValue: nil), "Clipboard preference migration should preserve an absent value as false")
         let catalogDirectory = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("handy-catalog-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: catalogDirectory) }
@@ -182,5 +186,34 @@ struct HandyChecks {
             failures.forEach { FileHandle.standardError.write(Data("FAIL: \($0)\\n".utf8)) }
             exit(1)
         }
+    }
+
+    private static func checkPreferenceMigration(expectedLegacyValue: Bool?) -> Bool {
+        let identifier = UUID().uuidString
+        let suiteName = "io.github.aloki-alok.handy-palette.tests.\(identifier)"
+        let legacyDomainName = "HandyTests.\(identifier)"
+        defer {
+            UserDefaults.standard.removePersistentDomain(forName: suiteName)
+            UserDefaults.standard.removePersistentDomain(forName: legacyDomainName)
+        }
+        if let expectedLegacyValue {
+            UserDefaults.standard.setPersistentDomain(
+                [HandyPreferences.clipboardHistoryEnabledKey: expectedLegacyValue],
+                forName: legacyDomainName
+            )
+        }
+        let preferences = HandyPreferencesStore(
+            suiteName: suiteName,
+            legacyDomainNames: [legacyDomainName]
+        )
+        let migratedValue = preferences.clipboardHistoryEnabled
+        if let expectedLegacyValue {
+            UserDefaults.standard.setPersistentDomain(
+                [HandyPreferences.clipboardHistoryEnabledKey: !expectedLegacyValue],
+                forName: legacyDomainName
+            )
+        }
+        return migratedValue == (expectedLegacyValue ?? false)
+            && preferences.clipboardHistoryEnabled == migratedValue
     }
 }
