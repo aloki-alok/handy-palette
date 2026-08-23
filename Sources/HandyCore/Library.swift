@@ -72,15 +72,27 @@ public struct HandyLibrary: Codable, Equatable, Sendable {
         }.prefix(limit))
     }
 
+    /// Favorites, most recently starred first. Items pinned before `pinnedAt` existed keep catalog order at the end.
+    public func favoriteItems() -> [HandyItem] {
+        items.enumerated().filter(\.element.isPinned).sorted { lhs, rhs in
+            switch (lhs.element.pinnedAt, rhs.element.pinnedAt) {
+            case let (left?, right?): return left == right ? lhs.offset < rhs.offset : left > right
+            case (.some, nil): return true
+            case (nil, .some): return false
+            case (nil, nil): return lhs.offset < rhs.offset
+            }
+        }.map(\.element)
+    }
+
     public mutating func recordUse(of id: String, at date: Date = .now) {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
         items[index].useCount = min(items[index].useCount + 1, 1_000_000)
         items[index].lastUsedAt = date
     }
 
-    public mutating func togglePinned(id: String) -> Bool? {
+    public mutating func togglePinned(id: String, at date: Date = .now) -> Bool? {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return nil }
-        items[index].isPinned.toggle()
+        items[index].setPinned(!items[index].isPinned, at: date)
         return items[index].isPinned
     }
 
@@ -144,22 +156,24 @@ public struct HandyItem: Codable, Equatable, Identifiable, Sendable {
     public let title: String
     public let tags: [String]
     public let categoryID: String
-    public var isPinned: Bool
+    public private(set) var isPinned: Bool
+    public private(set) var pinnedAt: Date?
     public var useCount: Int
     public var lastUsedAt: Date?
 
-    public init(id: String, text: String, title: String, tags: [String], categoryID: String? = nil, isPinned: Bool, useCount: Int = 0, lastUsedAt: Date? = nil) {
+    public init(id: String, text: String, title: String, tags: [String], categoryID: String? = nil, isPinned: Bool, pinnedAt: Date? = nil, useCount: Int = 0, lastUsedAt: Date? = nil) {
         self.id = id
         self.text = text
         self.title = title
         self.tags = tags
         self.categoryID = categoryID ?? Self.inferLegacyCategory(from: tags)
         self.isPinned = isPinned
+        self.pinnedAt = isPinned ? pinnedAt : nil
         self.useCount = useCount
         self.lastUsedAt = lastUsedAt
     }
 
-    private enum CodingKeys: String, CodingKey { case id, text, title, tags, categoryID, kind, isPinned, useCount, lastUsedAt }
+    private enum CodingKeys: String, CodingKey { case id, text, title, tags, categoryID, kind, isPinned, pinnedAt, useCount, lastUsedAt }
 
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -171,6 +185,7 @@ public struct HandyItem: Codable, Equatable, Identifiable, Sendable {
             ?? values.decodeIfPresent(String.self, forKey: .kind)
             ?? Self.inferLegacyCategory(from: tags)
         isPinned = try values.decode(Bool.self, forKey: .isPinned)
+        pinnedAt = isPinned ? try values.decodeIfPresent(Date.self, forKey: .pinnedAt) : nil
         useCount = try values.decodeIfPresent(Int.self, forKey: .useCount) ?? 0
         lastUsedAt = try values.decodeIfPresent(Date.self, forKey: .lastUsedAt)
     }
@@ -183,8 +198,14 @@ public struct HandyItem: Codable, Equatable, Identifiable, Sendable {
         try values.encode(tags, forKey: .tags)
         try values.encode(categoryID, forKey: .categoryID)
         try values.encode(isPinned, forKey: .isPinned)
+        try values.encodeIfPresent(pinnedAt, forKey: .pinnedAt)
         try values.encode(useCount, forKey: .useCount)
         try values.encodeIfPresent(lastUsedAt, forKey: .lastUsedAt)
+    }
+
+    public mutating func setPinned(_ pinned: Bool, at date: Date = .now) {
+        isPinned = pinned
+        pinnedAt = pinned ? date : nil
     }
 
     private static func inferLegacyCategory(from tags: [String]) -> String {

@@ -118,7 +118,8 @@ enum HandyCLI {
             title: title.trimmingCharacters(in: .whitespacesAndNewlines),
             tags: Array(tags.prefix(12)),
             categoryID: categoryID,
-            isPinned: options.flags.contains("favorite")
+            isPinned: options.flags.contains("favorite"),
+            pinnedAt: options.flags.contains("favorite") ? .now : nil
         )
         _ = try repo.update { $0.items.append(item) }
         print(item.id)
@@ -167,9 +168,9 @@ enum HandyCLI {
             guard let index = library.items.firstIndex(where: { $0.id == target }) else { return }
             matched = true
             switch action {
-            case "add": library.items[index].isPinned = true
-            case "remove": library.items[index].isPinned = false
-            default: library.items[index].isPinned.toggle()
+            case "add": library.items[index].setPinned(true)
+            case "remove": library.items[index].setPinned(false)
+            default: library.items[index].setPinned(!library.items[index].isPinned)
             }
             isPinned = library.items[index].isPinned
         }
@@ -182,7 +183,7 @@ enum HandyCLI {
         guard options.positionals.isEmpty || options.positionals == ["list"] else {
             throw CLIError("Usage: handy-palette favorites [list]")
         }
-        for item in try repository(from: arguments).load().items where item.isPinned { printItem(item) }
+        for item in try repository(from: arguments).load().favoriteItems() { printItem(item) }
     }
 
     private static func clipboard(_ arguments: [String]) throws {

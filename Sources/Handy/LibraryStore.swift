@@ -58,7 +58,7 @@ final class LibraryStore {
         if let systemShelf = section.systemShelf {
             switch systemShelf {
             case .recents: return library.recentItems().map(makeResult)
-            case .favorites: return library.items.filter(\.isPinned).map(makeResult)
+            case .favorites: return library.favoriteItems().map(makeResult)
             case .clipboard: return clipboardHistory.entries.map(ShelfResult.init)
             }
         }

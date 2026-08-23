@@ -43,6 +43,21 @@ struct HandyChecks {
         var favorites = library
         let waveWasPinned = favorites.items.first(where: { $0.id == "wave" })?.isPinned ?? false
         check(favorites.togglePinned(id: "wave") == !waveWasPinned, "Favorites should toggle by item id")
+        var ordered = library
+        ordered.items.indices.forEach { ordered.items[$0].setPinned(false) }
+        _ = ordered.togglePinned(id: "sparkles", at: Date(timeIntervalSince1970: 10))
+        _ = ordered.togglePinned(id: "shrug", at: Date(timeIntervalSince1970: 20))
+        _ = ordered.togglePinned(id: "happy", at: Date(timeIntervalSince1970: 30))
+        check(ordered.favoriteItems().map(\.id) == ["happy", "shrug", "sparkles"], "Favorites should list the newest star first")
+        _ = ordered.togglePinned(id: "shrug", at: Date(timeIntervalSince1970: 40))
+        check(ordered.items.first(where: { $0.id == "shrug" })?.pinnedAt == nil, "Unstarring should clear the favorite timestamp")
+        _ = ordered.togglePinned(id: "shrug", at: Date(timeIntervalSince1970: 50))
+        check(ordered.favoriteItems().map(\.id) == ["shrug", "happy", "sparkles"], "Re-starring should move an item back to the top")
+        let legacy = HandyLibrary(version: HandyLibrary.currentVersion, categories: library.categories, items: [
+            HandyItem(id: "carried-over", text: "(-_-)", title: "Carried over", tags: [], categoryID: "kaomoji", isPinned: true),
+            HandyItem(id: "stamped", text: "(o_o)", title: "Stamped", tags: [], categoryID: "kaomoji", isPinned: true, pinnedAt: Date(timeIntervalSince1970: 60))
+        ])
+        check(legacy.favoriteItems().map(\.id) == ["stamped", "carried-over"], "A stamped favorite should outrank one carried over without a timestamp")
 
         var clipboardHistory = ClipboardHistory()
         check(clipboardHistory.capture("first", at: Date(timeIntervalSince1970: 1)), "Clipboard should accept valid text")
