@@ -95,14 +95,19 @@ Run from a clean checkout of the intended release commit:
 swift build
 swift run KanaChecks
 swift run -c release Kana --check-search-performance
-swift run -c release Kana --check-focus
-swift run -c release Kana --check-background-focus
-swift run -c release Kana --check-snippet-focus
-swift run -c release Kana --check-keyboard
+./Scripts/package_macos_app.sh 0.3.0 .build/package-check
+ditto -x -k .build/package-check/Kana-0.3.0-arm64.zip .build/package-check/app
+.build/package-check/app/Kana.app/Contents/MacOS/Kana --check-window
+.build/package-check/app/Kana.app/Contents/MacOS/Kana --check-focus
+.build/package-check/app/Kana.app/Contents/MacOS/Kana --check-background-focus
+.build/package-check/app/Kana.app/Contents/MacOS/Kana --check-snippet-focus
+.build/package-check/app/Kana.app/Contents/MacOS/Kana --check-keyboard
 npm ci
 npm run test:web
 git diff --check
 ```
+
+The focus and keyboard checks run against the packaged app on purpose. A `swift run` binary is not a bundle, cannot reliably take key focus, and reports failure for reasons that have nothing to do with the code.
 
 For Homebrew, create the upstream tag first. Then run formula style, audit, source install, packaged checks, and service lifecycle verification against that exact tag. Remove test taps and local test packages after verification.
 

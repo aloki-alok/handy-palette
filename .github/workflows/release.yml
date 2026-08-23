@@ -35,10 +35,6 @@ jobs:
           swift build
           swift run KanaChecks
           swift run -c release Kana --check-search-performance
-          swift run -c release Kana --check-focus
-          swift run -c release Kana --check-background-focus
-          swift run -c release Kana --check-snippet-focus
-          swift run -c release Kana --check-keyboard
           npm ci
           npm run test:web
       - name: Package arm64 app archive
@@ -87,6 +83,8 @@ jobs:
             echo "Kana did not stop after the launch check." >&2
             exit 1
           fi
+          # Window key and first-responder behavior only holds for a real .app bundle,
+          # so every focus check runs here rather than against a swift run binary.
           "$app/Contents/MacOS/Kana" --check-window
           "$app/Contents/MacOS/Kana" --check-focus
           "$app/Contents/MacOS/Kana" --check-background-focus
