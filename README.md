@@ -30,7 +30,7 @@ brew install --cask aloki-alok/tap/handy-palette
 
 Open Handy Palette from Applications or Spotlight, then press `Option-Command-K` from any app. You can enable Open at login from its menu-bar menu.
 
-On first launch, macOS may ask you to confirm opening Handy Palette in System Settings > Privacy & Security.
+The current community build is unsigned and not notarized. On first launch, try opening Handy Palette once, then choose Open Anyway in System Settings > Privacy & Security and confirm.
 
 You can also open the palette from the command line:
 
