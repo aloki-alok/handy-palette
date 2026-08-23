@@ -14,9 +14,7 @@
   <a href="https://github.com/aloki-alok/handy-palette"><img src="https://img.shields.io/badge/macOS-14%2B-151815.svg" alt="macOS 14 or later"></a>
 </p>
 
-Handy Palette lives in the macOS menu bar and stays out of the way until you press `Option-Command-K`. Search the whole shelf, choose a result, and press Return to copy it. No account, analytics, or network connection is required.
-
-The bundled library contains more than 2,300 kaomoji and emoji. Recents bring back things you actually use, Favorites keep the best ones close, and optional clipboard history restores text you copied elsewhere.
+Press `Option-Command-K` in any app, search 2,300+ kaomoji and emoji, press Return to copy. Works offline, no account.
 
 [Try the interactive preview](https://aloki-alok.github.io/handy-palette/) or read on to run the native Mac app.
 
