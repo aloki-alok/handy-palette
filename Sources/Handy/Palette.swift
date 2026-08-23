@@ -22,41 +22,15 @@ final class PaletteController {
     }
 
     func runFocusDiagnostic(completion: @escaping (Bool, String) -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            let responder = self.panel?.firstResponder
-            let ownsTextInput = responder is NSTextView || responder is NSTextField
-            let responderName = responder.map { String(describing: type(of: $0)) } ?? "nil"
+        waitForKeyPalette(attemptsRemaining: 30) { key, responderName, ownsTextInput in
             self.postKeyEvent(keyCode: 0, characters: "focus-probe")
-            self.finishFocusDiagnostic(
-                responderName: responderName,
-                ownsTextInput: ownsTextInput,
-                attemptsRemaining: 10,
-                completion: completion
-            )
-        }
-    }
-
-    private func finishFocusDiagnostic(
-        responderName: String,
-        ownsTextInput: Bool,
-        attemptsRemaining: Int,
-        completion: @escaping (Bool, String) -> Void
-    ) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            let passed = NSApp.isActive
-                && self.panel?.isKeyWindow == true
-                && ownsTextInput
-                && self.state.query == "focus-probe"
-            if passed || attemptsRemaining == 1 {
-                completion(passed, "active=\(NSApp.isActive) key=\(self.panel?.isKeyWindow == true) responder=\(responderName) input=\(self.state.query == "focus-probe")")
-                return
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                let typed = self.state.query == "focus-probe"
+                completion(
+                    key && ownsTextInput && typed,
+                    "key=\(key) responder=\(responderName) input=\(typed)"
+                )
             }
-            self.finishFocusDiagnostic(
-                responderName: responderName,
-                ownsTextInput: ownsTextInput,
-                attemptsRemaining: attemptsRemaining - 1,
-                completion: completion
-            )
         }
     }
 
@@ -70,19 +44,54 @@ final class PaletteController {
             return
         }
         other.activate()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        waitForForeground(other, attemptsRemaining: 40) { yielded in
+            guard yielded else {
+                completion(false, "could not yield the foreground to \(other.localizedName ?? "?")")
+                return
+            }
             self.show()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                let responder = self.panel?.firstResponder
-                let responderName = responder.map { String(describing: type(of: $0)) } ?? "nil"
-                let ownsTextInput = responder is NSTextView || responder is NSTextField
+            self.waitForKeyPalette(attemptsRemaining: 30) { key, responderName, ownsTextInput in
                 self.postKeyEvent(keyCode: 0, characters: "focus-probe")
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     let typed = self.state.query == "focus-probe"
-                    let passed = self.panel?.isKeyWindow == true && ownsTextInput && typed
-                    completion(passed, "yieldedTo=\(other.localizedName ?? "?") key=\(self.panel?.isKeyWindow == true) responder=\(responderName) input=\(typed)")
+                    completion(
+                        key && ownsTextInput && typed,
+                        "yieldedTo=\(other.localizedName ?? "?") key=\(key) responder=\(responderName) input=\(typed)"
+                    )
                 }
             }
+        }
+    }
+
+    private func waitForForeground(
+        _ application: NSRunningApplication,
+        attemptsRemaining: Int,
+        completion: @escaping (Bool) -> Void
+    ) {
+        if NSWorkspace.shared.frontmostApplication == application {
+            completion(true)
+            return
+        }
+        guard attemptsRemaining > 1 else { completion(false); return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            self.waitForForeground(application, attemptsRemaining: attemptsRemaining - 1, completion: completion)
+        }
+    }
+
+    private func waitForKeyPalette(
+        attemptsRemaining: Int,
+        completion: @escaping (Bool, String, Bool) -> Void
+    ) {
+        let responder = panel?.firstResponder
+        let responderName = responder.map { String(describing: type(of: $0)) } ?? "nil"
+        let ownsTextInput = responder is NSTextView || responder is NSTextField
+        let key = panel?.isKeyWindow == true
+        if (key && ownsTextInput) || attemptsRemaining <= 1 {
+            completion(key, responderName, ownsTextInput)
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            self.waitForKeyPalette(attemptsRemaining: attemptsRemaining - 1, completion: completion)
         }
     }
 
