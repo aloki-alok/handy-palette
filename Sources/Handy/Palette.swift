@@ -60,6 +60,32 @@ final class PaletteController {
         }
     }
 
+    /// The hotkey path: another app owns the foreground when the palette opens.
+    func runBackgroundFocusDiagnostic(completion: @escaping (Bool, String) -> Void) {
+        hide()
+        guard let other = NSWorkspace.shared.runningApplications.first(where: {
+            $0.activationPolicy == .regular && $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
+        }) else {
+            completion(false, "no other foreground app to yield to")
+            return
+        }
+        other.activate()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.show()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                let responder = self.panel?.firstResponder
+                let responderName = responder.map { String(describing: type(of: $0)) } ?? "nil"
+                let ownsTextInput = responder is NSTextView || responder is NSTextField
+                self.postKeyEvent(keyCode: 0, characters: "focus-probe")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    let typed = self.state.query == "focus-probe"
+                    let passed = self.panel?.isKeyWindow == true && ownsTextInput && typed
+                    completion(passed, "yieldedTo=\(other.localizedName ?? "?") key=\(self.panel?.isKeyWindow == true) responder=\(responderName) input=\(typed)")
+                }
+            }
+        }
+    }
+
     func runSnippetFocusDiagnostic(completion: @escaping (Bool, String) -> Void) {
         prepareCustomItemEditor()
         finishSnippetFocusDiagnostic(attemptsRemaining: 20, completion: completion)

@@ -65,6 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             || CommandLine.arguments.contains("--check-window")
             || CommandLine.arguments.contains("--check-keyboard")
             || CommandLine.arguments.contains("--check-focus")
+            || CommandLine.arguments.contains("--check-background-focus")
             || CommandLine.arguments.contains("--check-snippet-focus")
             || CommandLine.arguments.contains("--check-search-performance") {
             DispatchQueue.main.async { [weak self] in self?.openPalette() }
@@ -88,6 +89,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 self.palette.runFocusDiagnostic { passed, detail in
                     print("Handy focus: \(passed ? "passed" : "failed") (\(detail))")
+                    exit(passed ? 0 : 1)
+                }
+            }
+        }
+        if CommandLine.arguments.contains("--check-background-focus") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.palette.runBackgroundFocusDiagnostic { passed, detail in
+                    print("Handy background focus: \(passed ? "passed" : "failed") (\(detail))")
                     exit(passed ? 0 : 1)
                 }
             }
