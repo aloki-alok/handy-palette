@@ -184,7 +184,7 @@ final class PaletteController {
             clearClipboardHistory: { [weak self] in self?.clearClipboardHistory() }
         )
         let panel = PalettePanel(
-            contentRect: NSRect(origin: .zero, size: CGSize(width: 660, height: 500)),
+            contentRect: NSRect(origin: .zero, size: CGSize(width: 720, height: 500)),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -490,7 +490,7 @@ struct PaletteView: View {
                 resultList
             }
         }
-        .frame(minWidth: 640, minHeight: 420)
+        .frame(minWidth: 700, minHeight: 420)
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear { searchFocused = true }
         .onExitCommand(perform: dismiss)
@@ -540,15 +540,14 @@ struct PaletteView: View {
 
     private var rail: some View {
         ScrollView {
-            LazyVStack(spacing: 5) {
+            LazyVStack(spacing: 3) {
                 ForEach(Array(store.sections.enumerated()), id: \.element.id) { index, section in
                     sectionButton(section, index: index)
                 }
             }
             .padding(8)
         }
-        .scrollClipDisabled()
-        .frame(width: 58)
+        .frame(width: 156)
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.42))
     }
 
@@ -560,13 +559,23 @@ struct PaletteView: View {
                 selectSection(at: index)
             }
         } label: {
-            VStack(spacing: 3) {
+            HStack(spacing: 9) {
                 sectionMark(section)
                     .font(.system(size: 15, weight: selected ? .semibold : .regular))
                     .scaleEffect(selected ? 1.06 : hoveredSectionID == section.id ? 1.025 : 1)
-                if index < 9 { Text("⌘\(index + 1)").font(.system(size: 8, design: .monospaced)) }
+                    .frame(width: 18)
+                Text(section.title)
+                    .font(.system(size: 12, weight: selected ? .semibold : .regular))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                if index < 9 {
+                    Text("⌘\(index + 1)")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundStyle(.tertiary)
+                }
             }
-            .frame(width: 40, height: 42)
+            .padding(.horizontal, 9)
+            .frame(maxWidth: .infinity, minHeight: 36)
             .foregroundStyle(selected ? Color.accentColor : Color.secondary)
             .background {
                 if selected {
@@ -743,6 +752,7 @@ struct PaletteView: View {
                             Text(result.detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     Spacer(minLength: 12)
                     Text(result.text)
                         .font(.system(size: 18, design: .monospaced))
@@ -750,6 +760,7 @@ struct PaletteView: View {
                         .minimumScaleFactor(0.6)
                         .multilineTextAlignment(.trailing)
                         .layoutPriority(1)
+                        .frame(minWidth: 130, alignment: .trailing)
                     Image(systemName: "return")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
@@ -773,6 +784,10 @@ struct PaletteView: View {
                 .opacity(result.isFavorite || isHovered || isSelected ? 1 : 0)
                 .help(result.isFavorite ? "Remove from favorites" : "Add to favorites")
                 .accessibilityLabel(result.isFavorite ? "Remove from favorites" : "Add to favorites")
+            } else {
+                Color.clear
+                    .frame(width: 34, height: 52)
+                    .accessibilityHidden(true)
             }
         }
         .frame(minHeight: 52)

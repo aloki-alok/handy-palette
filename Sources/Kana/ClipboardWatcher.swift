@@ -4,6 +4,7 @@ import KanaShared
 
 @MainActor
 final class ClipboardWatcher {
+    private static let pollingInterval: TimeInterval = 1
     private var timer: Timer?
     private var lastChangeCount = NSPasteboard.general.changeCount
     private let onText: (String) -> Void
@@ -15,9 +16,12 @@ final class ClipboardWatcher {
     func start() {
         guard timer == nil else { return }
         lastChangeCount = NSPasteboard.general.changeCount
-        let timer = Timer(timeInterval: 0.75, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: Self.pollingInterval, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.readIfChanged() }
         }
+        // Clipboard monitoring is opt-in and polling is the only NSPasteboard change signal.
+        // Tolerance lets macOS coalesce this background wakeup with nearby work.
+        timer.tolerance = 0.25
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }

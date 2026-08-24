@@ -60,8 +60,8 @@ struct ShelfResult: Identifiable, Equatable {
     init(entry: ClipboardEntry) {
         id = "clipboard:\(entry.id.uuidString)"
         text = entry.text
-        title = entry.text.replacingOccurrences(of: "\n", with: " ")
-        detail = "clipboard"
+        title = "Copied text"
+        detail = entry.capturedAt.formatted(date: .abbreviated, time: .shortened)
         groupID = "clipboard"
         groupTitle = "Clipboard"
         libraryID = nil

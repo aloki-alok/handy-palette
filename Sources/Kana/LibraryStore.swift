@@ -15,6 +15,7 @@ final class LibraryStore {
     private var clipboardWatcher: ClipboardWatcher?
     @ObservationIgnored private var cachedSearchQuery: String?
     @ObservationIgnored private var cachedSearchResults: [ShelfResult] = []
+    @ObservationIgnored private var cachedSectionResults: [String: [ShelfResult]] = [:]
 
     init(repository: LibraryRepository = LibraryRepository(), clipboardRepository: ClipboardHistoryRepository = ClipboardHistoryRepository()) {
         self.repository = repository
@@ -55,15 +56,21 @@ final class LibraryStore {
     }
 
     func results(in section: ShelfSection) -> [ShelfResult] {
+        if let cached = cachedSectionResults[section.id] { return cached }
+        let results: [ShelfResult]
         if let systemShelf = section.systemShelf {
             switch systemShelf {
-            case .recents: return library.recentItems().map(makeResult)
-            case .favorites: return library.favoriteItems().map(makeResult)
-            case .clipboard: return clipboardHistory.entries.map(ShelfResult.init)
+            case .recents: results = library.recentItems().map(makeResult)
+            case .favorites: results = library.favoriteItems().map(makeResult)
+            case .clipboard: results = clipboardHistory.entries.map(ShelfResult.init)
             }
+        } else if let categoryID = section.categoryID {
+            results = library.items.filter { $0.categoryID == categoryID }.map(makeResult)
+        } else {
+            results = []
         }
-        guard let categoryID = section.categoryID else { return [] }
-        return library.items.filter { $0.categoryID == categoryID }.map(makeResult)
+        cachedSectionResults[section.id] = results
+        return results
     }
 
     func search(_ query: String) -> [ShelfResult] {
@@ -161,6 +168,7 @@ final class LibraryStore {
     private func invalidateSearchCache() {
         cachedSearchQuery = nil
         cachedSearchResults = []
+        cachedSectionResults = [:]
     }
 
 }
