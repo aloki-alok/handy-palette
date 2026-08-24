@@ -447,12 +447,9 @@ struct PaletteView: View {
     let activateSelection: () -> Void
     let requestClipboardHistoryToggle: () -> Void
     let clearClipboardHistory: () -> Void
-    @State private var hoveredSectionID: String?
     @State private var hoveredResultID: String?
     @State private var isPresentingNewItem = false
     @FocusState private var searchFocused: Bool
-    @Namespace private var railSelection
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var selectedSection: ShelfSection {
         store.sections.first { $0.id == state.selectedSectionID } ?? store.sections[0]
@@ -484,13 +481,11 @@ struct PaletteView: View {
         VStack(spacing: 0) {
             searchHeader
             Divider()
-            HStack(spacing: 0) {
-                rail.zIndex(2)
-                Divider()
-                resultList
-            }
+            shelfBar
+            Divider()
+            resultList
         }
-        .frame(minWidth: 700, minHeight: 420)
+        .frame(minWidth: 720, minHeight: 420)
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear { searchFocused = true }
         .onExitCommand(perform: dismiss)
@@ -538,56 +533,38 @@ struct PaletteView: View {
         .frame(height: 52)
     }
 
-    private var rail: some View {
-        ScrollView {
-            LazyVStack(spacing: 3) {
+    private var shelfBar: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 4) {
                 ForEach(Array(store.sections.enumerated()), id: \.element.id) { index, section in
                     sectionButton(section, index: index)
                 }
             }
-            .padding(8)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
         }
-        .frame(width: 156)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.42))
+        .scrollIndicators(.never)
+        .frame(height: 42)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.2))
     }
 
     @ViewBuilder
     private func sectionButton(_ section: ShelfSection, index: Int) -> some View {
         let selected = state.selectedSectionID == section.id && state.query.isEmpty
         Button {
-            withAnimation(reduceMotion ? nil : .spring(response: 0.24, dampingFraction: 0.84)) {
-                selectSection(at: index)
-            }
+            selectSection(at: index)
         } label: {
-            HStack(spacing: 9) {
+            HStack(spacing: 6) {
                 sectionMark(section)
-                    .font(.system(size: 15, weight: selected ? .semibold : .regular))
-                    .scaleEffect(selected ? 1.06 : hoveredSectionID == section.id ? 1.025 : 1)
-                    .frame(width: 18)
+                    .font(.system(size: 12, weight: selected ? .semibold : .regular))
                 Text(section.title)
                     .font(.system(size: 12, weight: selected ? .semibold : .regular))
                     .lineLimit(1)
-                Spacer(minLength: 0)
-                if index < 9 {
-                    Text("⌘\(index + 1)")
-                        .font(.system(size: 9, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                }
             }
-            .padding(.horizontal, 9)
-            .frame(maxWidth: .infinity, minHeight: 36)
+            .padding(.horizontal, 10)
+            .frame(minHeight: 28)
             .foregroundStyle(selected ? Color.accentColor : Color.secondary)
-            .background {
-                if selected {
-                    RoundedRectangle(cornerRadius: 9)
-                        .fill(Color.accentColor.opacity(0.14))
-                        .matchedGeometryEffect(id: "rail-selection", in: railSelection)
-                } else if hoveredSectionID == section.id {
-                    RoundedRectangle(cornerRadius: 9)
-                        .fill(Color.primary.opacity(0.07))
-                }
-            }
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: hoveredSectionID)
+            .background(selected ? Color.accentColor.opacity(0.14) : .clear, in: Capsule())
         }
         .buttonStyle(.plain)
         .keyboardShortcut(
@@ -596,12 +573,7 @@ struct PaletteView: View {
                 : nil
         )
         .accessibilityLabel(section.title)
-        .onHover { hovering in
-            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.14)) {
-                hoveredSectionID = hovering ? section.id : nil
-            }
-        }
-        .help(section.title)
+        .help(index < 9 ? "\(section.title) (Command-\(index + 1))" : section.title)
     }
 
     @ViewBuilder
@@ -621,7 +593,7 @@ struct PaletteView: View {
                 contentHeader
                 Divider()
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 2, pinnedViews: [.sectionHeaders]) {
+                    LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
                         if results.isEmpty { emptyState }
                         ForEach(groupedResults, id: \.0) { group in
                             Section {
@@ -641,9 +613,7 @@ struct PaletteView: View {
                                             }
                                         }
                                         .onHover { hovering in
-                                            withAnimation(.easeOut(duration: 0.1)) {
-                                                hoveredResultID = hovering ? result.id : nil
-                                            }
+                                            hoveredResultID = hovering ? result.id : nil
                                         }
                                 }
                             } header: {
@@ -652,7 +622,7 @@ struct PaletteView: View {
                                         .font(.system(size: 11, weight: .semibold))
                                         .foregroundStyle(.secondary)
                                         .padding(.horizontal, 14)
-                                        .padding(.vertical, 7)
+                                        .padding(.vertical, 8)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .background(.bar)
                                 }
@@ -743,59 +713,52 @@ struct PaletteView: View {
     }
 
     private func resultRow(_ result: ShelfResult, isSelected: Bool, isHovered: Bool) -> some View {
-        HStack(spacing: 0) {
-            Button { copy(result) } label: {
-                HStack(spacing: 14) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(result.title).font(.system(size: 13, weight: .medium)).lineLimit(1)
+        Button { copy(result) } label: {
+            HStack(spacing: 16) {
+                if result.groupID == "clipboard" {
+                    Text(result.text)
+                        .font(.system(size: 13, weight: .medium))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text(result.detail)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .frame(width: 116, alignment: .trailing)
+                } else {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 5) {
+                            Text(result.title)
+                                .font(.system(size: 13, weight: .medium))
+                                .lineLimit(1)
+                            if result.isFavorite {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                         if !result.detail.isEmpty {
-                            Text(result.detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                            Text(result.detail)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    Spacer(minLength: 12)
                     Text(result.text)
                         .font(.system(size: 18, design: .monospaced))
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
-                        .multilineTextAlignment(.trailing)
-                        .layoutPriority(1)
-                        .frame(minWidth: 130, alignment: .trailing)
-                    Image(systemName: "return")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .opacity(isSelected ? 1 : 0)
-                        .frame(width: 14)
+                        .frame(width: 116, alignment: .trailing)
                 }
-                .padding(.leading, 12)
-                .frame(maxWidth: .infinity, minHeight: 52)
             }
-            .buttonStyle(.plain)
-
-            if result.libraryID != nil {
-                Button { store.toggleFavorite(of: result) } label: {
-                    Image(systemName: result.isFavorite ? "star.fill" : "star")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(isHovered ? Color.accentColor : Color.secondary)
-                        .frame(width: 34, height: 52)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .opacity(result.isFavorite || isHovered || isSelected ? 1 : 0)
-                .help(result.isFavorite ? "Remove from favorites" : "Add to favorites")
-                .accessibilityLabel(result.isFavorite ? "Remove from favorites" : "Add to favorites")
-            } else {
-                Color.clear
-                    .frame(width: 34, height: 52)
-                    .accessibilityHidden(true)
-            }
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, minHeight: 48)
         }
-        .frame(minHeight: 52)
-        .background(
-            isSelected ? Color.primary.opacity(0.07) : isHovered ? Color.primary.opacity(0.035) : .clear,
-            in: RoundedRectangle(cornerRadius: 8)
-        )
-        .animation(.easeOut(duration: 0.1), value: isSelected)
+        .buttonStyle(.plain)
+        .background(isSelected ? Color.accentColor.opacity(0.12) : isHovered ? Color.primary.opacity(0.035) : .clear)
+        .overlay(alignment: .bottom) { Divider() }
         .contentShape(Rectangle())
     }
 
